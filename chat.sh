@@ -92,6 +92,16 @@ cmd_send() {
   jq -r '.mid' <<< "$json_str"
 }
 
+cmd_sendi() {
+  local msg="$1"
+  local id="$2"
+  local mid="$3"
+  local result_mid
+  result_mid="$("$0" send "$msg" "$id" "$mid")"
+  watch -et -n 0.5 "$0" geti "$result_mid" <<< '' || true
+  cmd_get "$result_mid"
+}
+
 cmd_get() {
   local mid="$1"
   local json_str exit_code=0
@@ -114,6 +124,14 @@ cmd_get() {
   printf '【%s】 %s\n%s%s\n\n' "${roleMap[$role]}" "${mid}" "${msg}" "${end_turn_flag}"
 }
 
+cmd_geti() {
+  local mid="$1"
+  local result
+  result="$("$0" get "$mid")"
+  cat <<< "$result"
+  tail -1 <<< "$result" | grep -q '_$'
+}
+
 cmd_help(){
   printf 'Usage: %s COMMAND
 
@@ -122,7 +140,8 @@ Commands:
   title <id> <mid>
   title <id> <title>
   history <id>
-  send <id> <mid>
+  send <msg> <id> <mid>
+  sendi <msg> <id> <mid>
   get <mid>
   busy
 
