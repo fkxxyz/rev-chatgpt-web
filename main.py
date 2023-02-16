@@ -44,15 +44,50 @@ def api():
 
 @app.route('/api/conversations')
 def get_conversations():
-    conversations = globalObject.client.get_conversations()
-    return flask.jsonify(conversations)
+    response = patch.get_conversations(globalObject.client.session)
+    if response.status_code != http.HTTPStatus.OK:
+        return flask.make_response(response.content, response.status_code)
+    return flask.jsonify(json.loads(response.text))
+
+
+@app.route('/api/title', methods=['PATCH'])
+def change_title():
+    conversation_id = flask.request.args.get('id')
+    if conversation_id is None or len(conversation_id) == 0:
+        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    title_bytes = flask.request.get_data()
+    title_str = title_bytes.decode()
+    if len(title_str) == 0:
+        return flask.make_response('error: missing title body', http.HTTPStatus.BAD_REQUEST)
+    response = patch.change_title(globalObject.client.session, conversation_id, title_str)
+    if response.status_code != http.HTTPStatus.OK:
+        return flask.make_response(response.content, response.status_code)
+    return flask.jsonify(json.loads(response.text))
+
+
+@app.route('/api/title', methods=['POST'])
+def gen_title():
+    conversation_id = flask.request.args.get('id')
+    if conversation_id is None or len(conversation_id) == 0:
+        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    message_id = flask.request.args.get('mid')
+    if message_id is None or len(message_id) == 0:
+        return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
+    response = patch.gen_title(globalObject.client.session, conversation_id, message_id)
+    if response.status_code != http.HTTPStatus.OK:
+        return flask.make_response(response.content, response.status_code)
+    return flask.jsonify(json.loads(response.text))
 
 
 @app.route('/api/history')
 def get_history():
     conversation_id = flask.request.args.get('id')
-    history = globalObject.client.get_msg_history(conversation_id)
-    return flask.jsonify(history)
+    if conversation_id is None or len(conversation_id) == 0:
+        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    response = patch.history(globalObject.client.session, conversation_id)
+    if response.status_code != http.HTTPStatus.OK:
+        return flask.make_response(response.content, response.status_code)
+    return flask.jsonify(json.loads(response.text))
 
 
 def get_reply(response, response_iter):
@@ -78,8 +113,12 @@ def send():
         return flask.make_response('error: server is busy', http.HTTPStatus.SERVICE_UNAVAILABLE)
     conversation_id = flask.request.args.get('id')
     parent_id = flask.request.args.get('mid')
+    if conversation_id is None:
+        conversation_id = ''
     if parent_id is None:
-        if conversation_id is not None:
+        parent_id = ''
+    if len(parent_id) == 0:
+        if len(conversation_id) != 0:
             return flask.make_response('error: missing mid query', http.HTTPStatus.BAD_REQUEST)
         parent_id = str(uuid.uuid4())
     msg_bytes = flask.request.get_data()
@@ -99,6 +138,8 @@ def send():
             detail_check = detail.lower()
             if detail_check.find('too many requests') >= 0:
                 return flask.make_response(detail, http.HTTPStatus.TOO_MANY_REQUESTS)
+            if detail_check.find('not found') >= 0:
+                return flask.make_response(detail, http.HTTPStatus.NOT_FOUND)
             if detail_check.find('something went wrong') >= 0:
                 return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
         return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
