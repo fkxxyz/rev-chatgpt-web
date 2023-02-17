@@ -50,6 +50,6 @@ def send(session: requests.sessions.Session, config: dict, conversation_id: str,
     return session.post(
         url=revChatGPT.V1.BASE_URL + "api/conversation",
         data=json.dumps(data),
-        timeout=360,
+        timeout=20,
         stream=True,
     )

@@ -7,7 +7,9 @@ import json
 import os
 import threading
 import uuid
+from typing import Iterator
 
+import requests
 import revChatGPT.V1
 import flask
 
@@ -44,10 +46,21 @@ def api():
 
 @app.route('/api/conversations')
 def get_conversations():
-    response = patch.get_conversations(globalObject.client.session)
+    offset = flask.request.args.get('offset')
+    limit = flask.request.args.get('limit')
+    if offset is None or len(offset) == 0:
+        offset = 0
+    if limit is None or len(limit) == 0:
+        limit = 20
+    try:
+        offset = int(offset)
+        limit = int(limit)
+    except ValueError:
+        return flask.make_response('error: invalid offset or limit query', http.HTTPStatus.BAD_REQUEST)
+    response = patch.get_conversations(globalObject.client.session, offset, limit)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    return flask.jsonify(json.loads(response.text))
+    return flask.jsonify(json.loads(response.content))
 
 
 @app.route('/api/title', methods=['PATCH'])
@@ -62,7 +75,7 @@ def change_title():
     response = patch.change_title(globalObject.client.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    return flask.jsonify(json.loads(response.text))
+    return flask.jsonify(json.loads(response.content))
 
 
 @app.route('/api/title', methods=['POST'])
@@ -76,7 +89,7 @@ def gen_title():
     response = patch.gen_title(globalObject.client.session, conversation_id, message_id)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    return flask.jsonify(json.loads(response.text))
+    return flask.jsonify(json.loads(response.content))
 
 
 @app.route('/api/history')
@@ -87,24 +100,34 @@ def get_history():
     response = patch.history(globalObject.client.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    return flask.jsonify(json.loads(response.text))
+    return flask.jsonify(json.loads(response.content))
 
 
-def get_reply(response, response_iter):
-    for line in response_iter:
-        if len(line) == 0:
-            continue
-        if line[:6] == b'data: ':
-            try:
-                line_resp = json.loads(line[6:])
-            except json.decoder.JSONDecodeError:
-                print(line)
+def get_reply(response: requests.Response, response_iter: Iterator, mid: str):
+    try:
+        for line in response_iter:
+            if len(line) == 0:
                 continue
-            globalObject.messages[line_resp["message"]["id"]] = line_resp
-        else:
-            print(line)
-    response.close()
-    globalObject.busy = False
+            if line[:6] == b'data: ':
+                try:
+                    line_resp = json.loads(line[6:])
+                except json.decoder.JSONDecodeError:
+                    print(line)
+                    continue
+                globalObject.messages[mid] = line_resp
+            if line[:7] == b'event: ':
+                event = line[7:]
+                if event == 'ping':
+                    pass
+            else:
+                print(line)
+    except requests.RequestException as e:
+        globalObject.messages[mid]["error"] = str(e)
+    finally:
+        response.close()
+        globalObject.busy = False
+        globalObject.messages[mid]["finished"] = True
+        print("request " + mid, " closed")
 
 
 @app.route('/api/send', methods=['POST'])
@@ -144,10 +167,11 @@ def send():
                 return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
         return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
     line_resp = json.loads(line[6:])
-    globalObject.messages[line_resp["message"]["id"]] = line_resp
+    new_mid = line_resp["message"]["id"]
+    globalObject.messages[new_mid] = line_resp
     globalObject.busy = True
-    print(msg_str)
-    threading.Thread(target=get_reply, args=(response, response_iter)).start()
+    print("request " + new_mid, " opened")
+    threading.Thread(target=get_reply, args=(response, response_iter, new_mid)).start()
     return flask.jsonify({"mid": line_resp["message"]["id"]})
 
 

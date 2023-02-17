@@ -15,8 +15,10 @@ roleMap["user"]="👨"
 roleMap["assistant"]="💻"
 
 cmd_list() {
+  local limit="$1"
+  local offset="$2"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/conversations")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/conversations?limit=${limit}&offset=${offset}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -98,7 +100,7 @@ cmd_sendi() {
   local msg
   msg="$(cat)"
   echo "正在发送..." >&2
-  local result_mid
+  local result_mid exit_code=0
   result_mid="$("$0" send "$msg" "$id" "$mid")"
   watch -et -n 0.5 "$0" geti "$result_mid" <<< '' || true
   cmd_get "$result_mid"
@@ -112,18 +114,18 @@ cmd_get() {
     echo "$json_str"
     return "$exit_code"
   fi
-  local id mid role msg end_turn
+  local id mid role msg finished
   id="$(jq -r '.conversation_id' <<< "$json_str")"
   mid="$(jq -r '.message.id' <<< "$json_str")"
   role="$(jq -r '.message.role' <<< "$json_str")"
   msg="$(jq -r '.message.content.parts[0]' <<< "$json_str")"
-  end_turn="$(jq -r '.message.end_turn' <<< "$json_str")"
-  local end_turn_flag="_"
-  if [ "$end_turn" == "true" ]; then
-    end_turn_flag=""
+  finished="$(jq -r '.finished' <<< "$json_str")"
+  local finished_flag="_"
+  if [ "$finished" == "true" ]; then
+    finished_flag=""
   fi
   printf '%s\n\n' "$id"
-  printf '【%s】 %s\n%s%s\n\n' "${roleMap[$role]}" "${mid}" "${msg}" "${end_turn_flag}"
+  printf '【%s】 %s\n%s%s\n\n' "${roleMap[$role]}" "${mid}" "${msg}" "${finished_flag}"
 }
 
 cmd_geti() {
@@ -138,7 +140,7 @@ cmd_help(){
   printf 'Usage: %s COMMAND
 
 Commands:
-  list
+  list [limit] [offset]
   title <id> <mid>
   title <id> <title>
   history <id>
