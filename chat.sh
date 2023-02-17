@@ -93,9 +93,11 @@ cmd_send() {
 }
 
 cmd_sendi() {
-  local msg="$1"
-  local id="$2"
-  local mid="$3"
+  local id="$1"
+  local mid="$2"
+  local msg
+  msg="$(cat)"
+  echo "正在发送..." >&2
   local result_mid
   result_mid="$("$0" send "$msg" "$id" "$mid")"
   watch -et -n 0.5 "$0" geti "$result_mid" <<< '' || true
@@ -141,7 +143,7 @@ Commands:
   title <id> <title>
   history <id>
   send <msg> <id> <mid>
-  sendi <msg> <id> <mid>
+  sendi <id> <mid>  (from stdin)
   get <mid>
   busy
 
