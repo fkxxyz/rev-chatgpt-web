@@ -101,7 +101,11 @@ cmd_sendi() {
   msg="$(cat)"
   echo "正在发送..." >&2
   local result_mid exit_code=0
-  result_mid="$("$0" send "$msg" "$id" "$mid")"
+  result_mid="$("$0" send "$msg" "$id" "$mid")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$result_mid"
+    return "$exit_code"
+  fi
   watch -et -n 0.5 "$0" geti "$result_mid" <<< '' || true
   cmd_get "$result_mid"
 }
@@ -132,7 +136,7 @@ cmd_geti() {
   local mid="$1"
   local result
   result="$("$0" get "$mid")"
-  cat <<< "$result"
+  cat <<< "$result" | tail -20
   tail -1 <<< "$result" | grep -q '_$'
 }
 

@@ -75,7 +75,11 @@ def change_title():
     response = patch.change_title(globalObject.client.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    return flask.jsonify(json.loads(response.content))
+    try:
+        response_json = json.loads(response.content)
+    except json.decoder.JSONDecodeError:
+        return flask.make_response(response.content, http.HTTPStatus.NOT_FOUND)
+    return flask.jsonify(response_json)
 
 
 @app.route('/api/title', methods=['POST'])
@@ -133,7 +137,7 @@ def get_reply(response: requests.Response, response_iter: Iterator, mid: str):
 @app.route('/api/send', methods=['POST'])
 def send():
     if globalObject.busy:
-        return flask.make_response('error: server is busy', http.HTTPStatus.SERVICE_UNAVAILABLE)
+        return flask.make_response('error: server is busy', http.HTTPStatus.CONFLICT)
     conversation_id = flask.request.args.get('id')
     parent_id = flask.request.args.get('mid')
     if conversation_id is None:
@@ -165,6 +169,8 @@ def send():
                 return flask.make_response(detail, http.HTTPStatus.NOT_FOUND)
             if detail_check.find('something went wrong') >= 0:
                 return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
+            if detail_check.find('only one message at a time') >= 0:
+                return flask.make_response(detail, http.HTTPStatus.CONFLICT)
         return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
     line_resp = json.loads(line[6:])
     new_mid = line_resp["message"]["id"]
