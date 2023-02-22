@@ -10,17 +10,16 @@ import uuid
 from typing import Iterator
 
 import requests
-import revChatGPT.V1
 import flask
 
-import patch
+import chatgpt
 
 app = flask.Flask(__name__)
 
 
 class GlobalObjectClass:
     def __init__(self):
-        self.client: revChatGPT.V1.Chatbot = None
+        self.session: requests.Session = None
         # TODO 自动清理
         self.messages: dict = {}
         self.busy: bool = False
@@ -57,7 +56,7 @@ def get_conversations():
         limit = int(limit)
     except ValueError:
         return flask.make_response('error: invalid offset or limit query', http.HTTPStatus.BAD_REQUEST)
-    response = patch.get_conversations(globalObject.client.session, offset, limit)
+    response = chatgpt.get_conversations(globalObject.session, offset, limit)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     return flask.jsonify(json.loads(response.content))
@@ -72,7 +71,7 @@ def change_title():
     title_str = title_bytes.decode()
     if len(title_str) == 0:
         return flask.make_response('error: missing title body', http.HTTPStatus.BAD_REQUEST)
-    response = patch.change_title(globalObject.client.session, conversation_id, title_str)
+    response = chatgpt.change_title(globalObject.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     try:
@@ -90,7 +89,7 @@ def gen_title():
     message_id = flask.request.args.get('mid')
     if message_id is None or len(message_id) == 0:
         return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
-    response = patch.gen_title(globalObject.client.session, conversation_id, message_id)
+    response = chatgpt.generate_title(globalObject.session, conversation_id, message_id)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     return flask.jsonify(json.loads(response.content))
@@ -101,7 +100,7 @@ def get_history():
     conversation_id = flask.request.args.get('id')
     if conversation_id is None or len(conversation_id) == 0:
         return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
-    response = patch.history(globalObject.client.session, conversation_id)
+    response = chatgpt.get_conversation_history(globalObject.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     return flask.jsonify(json.loads(response.content))
@@ -150,7 +149,7 @@ def send():
         parent_id = str(uuid.uuid4())
     msg_bytes = flask.request.get_data()
     msg_str = msg_bytes.decode()
-    response = patch.send(globalObject.client.session, app.config["auth_config"], conversation_id, parent_id, msg_str)
+    response = chatgpt.send(globalObject.session, app.config["auth_config"], conversation_id, parent_id, msg_str)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()
@@ -199,7 +198,8 @@ def run(host: str, port: int, dist: str, auth_config: dict):
     app._static_folder = dist
     app.config["auth_config"] = auth_config
     print("login to ChatGPT ...")
-    globalObject.client = revChatGPT.V1.Chatbot(config=app.config["auth_config"])
+    session_token = chatgpt.login_with_cookie(auth_config["session_token"])
+    globalObject.session = chatgpt.get_session(session_token)
     print("login success")
     serve(app, host=host, port=port)
 
