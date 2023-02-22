@@ -169,6 +169,8 @@ def send():
                 return flask.make_response(detail, http.HTTPStatus.NOT_FOUND)
             if detail_check.find('something went wrong') >= 0:
                 return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
+            if detail_check.find('gone wrong') >= 0:
+                return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
             if detail_check.find('only one message at a time') >= 0:
                 return flask.make_response(detail, http.HTTPStatus.CONFLICT)
         return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
