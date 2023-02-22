@@ -64,7 +64,7 @@ cmd_history() {
   local ids=()
   local role msg
   while true; do
-    role="$(jq -r ".mapping.\"${current_node}\".message.role" <<< "$json_str")"
+    role="$(jq -r ".mapping.\"${current_node}\".message.author.role" <<< "$json_str")"
     if [ "$role" == null ]; then
       break
     fi
