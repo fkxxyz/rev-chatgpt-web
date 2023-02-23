@@ -149,7 +149,10 @@ def send():
         parent_id = str(uuid.uuid4())
     msg_bytes = flask.request.get_data()
     msg_str = msg_bytes.decode()
-    response = chatgpt.send(globalObject.session, app.config["auth_config"], conversation_id, parent_id, msg_str)
+    try:
+        response = chatgpt.send(globalObject.session, conversation_id, parent_id, msg_str)
+    except requests.exceptions.ReadTimeout as err:
+        return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()

@@ -121,7 +121,7 @@ cmd_get() {
   local id mid role msg finished
   id="$(jq -r '.conversation_id' <<< "$json_str")"
   mid="$(jq -r '.message.id' <<< "$json_str")"
-  role="$(jq -r '.message.role' <<< "$json_str")"
+  role="$(jq -r '.message.author.role' <<< "$json_str")"
   msg="$(jq -r '.message.content.parts[0]' <<< "$json_str")"
   finished="$(jq -r '.finished' <<< "$json_str")"
   local finished_flag="_"

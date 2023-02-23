@@ -99,8 +99,14 @@ def send(session: requests.Session, conversation_id: str, parent_id: str,
         "messages": [
             {
                 "id": str(uuid.uuid4()),
+                "author": {
+                    "role": "user"
+                },
                 "role": "user",
-                "content": {"content_type": "text", "parts": [prompt]},
+                "content": {
+                    "content_type": "text",
+                    "parts": [prompt],
+                },
             },
         ],
         "parent_message_id": parent_id,
@@ -111,6 +117,6 @@ def send(session: requests.Session, conversation_id: str, parent_id: str,
     return session.post(
         url=BASE_URL + "api/conversation",
         data=json.dumps(data),
-        timeout=20,
+        timeout=600,
         stream=True,
     )
