@@ -161,17 +161,20 @@ def send():
             return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
         if "detail" in response_json:
             detail = response_json["detail"]
-            detail_check = detail.lower()
-            if detail_check.find('too many requests') >= 0:
-                return flask.make_response(detail, http.HTTPStatus.TOO_MANY_REQUESTS)
-            if detail_check.find('not found') >= 0:
-                return flask.make_response(detail, http.HTTPStatus.NOT_FOUND)
-            if detail_check.find('something went wrong') >= 0:
-                return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
-            if detail_check.find('gone wrong') >= 0:
-                return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
-            if detail_check.find('only one message at a time') >= 0:
-                return flask.make_response(detail, http.HTTPStatus.CONFLICT)
+            if type(detail) == str:
+                detail_check = detail.lower()
+                if detail_check.find('too many requests') >= 0:
+                    return flask.make_response(detail, http.HTTPStatus.TOO_MANY_REQUESTS)
+                if detail_check.find('not found') >= 0:
+                    return flask.make_response(detail, http.HTTPStatus.NOT_FOUND)
+                if detail_check.find('something went wrong') >= 0:
+                    return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
+                if detail_check.find('gone wrong') >= 0:
+                    return flask.make_response(detail, http.HTTPStatus.NOT_ACCEPTABLE)
+                if detail_check.find('only one message at a time') >= 0:
+                    return flask.make_response(detail, http.HTTPStatus.CONFLICT)
+            else:
+                return flask.make_response(str(detail), http.HTTPStatus.INTERNAL_SERVER_ERROR)
         return flask.make_response(line, http.HTTPStatus.BAD_REQUEST)
     line_resp = json.loads(line[6:])
     new_mid = line_resp["message"]["id"]
