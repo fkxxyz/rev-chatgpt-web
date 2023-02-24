@@ -214,7 +214,7 @@ def run(host: str, port: int, dist: str, auth_config: dict):
         session.proxies.update(proxies)
     session_token = chatgpt.login_with_cookie(auth_config["session_token"], auth_config.get("proxy"))
     chatgpt.set_session(session, session_token)
-    globalObject.session = session_token
+    globalObject.session = session
     print("login success")
     serve(app, host=host, port=port)
 
