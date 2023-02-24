@@ -202,10 +202,19 @@ def run(host: str, port: int, dist: str, auth_config: dict):
     from waitress import serve
 
     app._static_folder = dist
-    app.config["auth_config"] = auth_config
     print("login to ChatGPT ...")
-    session_token = chatgpt.login_with_cookie(auth_config["session_token"])
-    globalObject.session = chatgpt.get_session(session_token)
+    session = requests.Session()
+    if "proxy" in auth_config:
+        if isinstance(auth_config["proxy"], str) is False:
+            raise Exception("Proxy must be a string!")
+        proxies = {
+            "http": auth_config["proxy"],
+            "https": auth_config["proxy"],
+        }
+        session.proxies.update(proxies)
+    session_token = chatgpt.login_with_cookie(auth_config["session_token"], auth_config.get("proxy"))
+    chatgpt.set_session(session, session_token)
+    globalObject.session = session_token
     print("login success")
     serve(app, host=host, port=port)
 

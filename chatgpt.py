@@ -37,8 +37,7 @@ def login_with_cookie(session_token: str, proxy: str = None) -> str:
     return access_token
 
 
-def get_session(access_token: str) -> requests.Session:
-    session = requests.Session()
+def set_session(session: requests.Session, access_token: str):
     session.headers.update(
         {
             "Accept": "text/event-stream",
@@ -50,7 +49,6 @@ def get_session(access_token: str) -> requests.Session:
             "Referer": "https://chat.openai.com/chat",
         },
     )
-    return session
 
 
 def get_conversations(session: requests.Session, offset=0, limit=20) -> requests.Response:
