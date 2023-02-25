@@ -118,10 +118,13 @@ def get_reply(response: requests.Response, response_iter: Iterator, mid: str):
                     print(line)
                     continue
                 globalObject.messages[mid] = line_resp
-            if line[:7] == b'event: ':
+            elif line[:7] == b'event: ':
                 event = line[7:]
                 if event == 'ping':
+                    print("ping")
                     pass
+                else:
+                    print(line)
             else:
                 print(line)
     except requests.RequestException as e:
