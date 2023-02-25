@@ -3,6 +3,7 @@ set -e
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:9987}"
 BASIC_AUTH="${BASIC_AUTH:-}"
+ACCOUNT_ID="${ACCOUNT_ID:-}"
 
 EXTRA_CURL_ARGS=()
 if [ "$BASIC_AUTH" ]; then
@@ -14,11 +15,31 @@ declare -A roleMap
 roleMap["user"]="👨"
 roleMap["assistant"]="💻"
 
+cmd_accounts() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/accounts")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.[] | "\(.id) \(.email)"' <<< "$json_str"
+}
+
+cmd_models() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/models?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_list() {
   local limit="$1"
   local offset="$2"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/conversations?limit=${limit}&offset=${offset}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/conversations?account=${ACCOUNT_ID}&limit=${limit}&offset=${offset}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -31,7 +52,7 @@ cmd_title() {
   if [ "${#2}" == 36 ]; then
     mid="$2"
     local json_str exit_code=0
-    json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X POST "$BASE_URL/api/title?id=${id}&mid=${mid}")" || exit_code="$?"
+    json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X POST "$BASE_URL/api/title?account=${ACCOUNT_ID}&id=${id}&mid=${mid}")" || exit_code="$?"
     if [ "$exit_code" != "0" ]; then
       echo "$json_str"
       return "$exit_code"
@@ -41,7 +62,7 @@ cmd_title() {
   fi
   title="$2"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body --data-binary "$title" -s -X PATCH "$BASE_URL/api/title?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body --data-binary "$title" -s -X PATCH "$BASE_URL/api/title?account=${ACCOUNT_ID}&id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -52,7 +73,7 @@ cmd_title() {
 cmd_history() {
   local id="$1"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/history?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/history?account=${ACCOUNT_ID}&id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -86,7 +107,7 @@ cmd_send() {
   local id="$2"
   local mid="$3"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s --data-binary "$msg" "$BASE_URL/api/send?id=${id}&mid=${mid}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s --data-binary "$msg" "$BASE_URL/api/send?account=${ACCOUNT_ID}&id=${id}&mid=${mid}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -144,6 +165,7 @@ cmd_help(){
   printf 'Usage: %s COMMAND
 
 Commands:
+  models
   list [limit] [offset]
   title <id> <mid>
   title <id> <title>

@@ -1,0 +1,10 @@
+{
+  "accounts": [
+    {
+      "id": "xx",
+      "email": "xx@xxx.com",
+      "session_token": "xxxxxxxxx"
+    }
+  ],
+  "proxy": "http://xx.xx.xx.xx:xxxx"
+}
