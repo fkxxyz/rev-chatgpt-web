@@ -165,6 +165,7 @@ cmd_help(){
   printf 'Usage: %s COMMAND
 
 Commands:
+  accounts
   models
   list [limit] [offset]
   title <id> <mid>
