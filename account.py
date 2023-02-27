@@ -44,7 +44,13 @@ class Account:
         response = chatgpt.get_models(self.session)
         if response.status_code == http.HTTPStatus.OK:
             models = json.loads(response.content)
-            for model in models.get("models"):
+            detail = models.get("detail")
+            if detail.get("code") == "token_expired":
+                return False
+            models_obj = models.get("models")
+            if models_obj is None:
+                return False
+            for model in models_obj:
                 if model["slug"] == chatgpt.CHATGPT_DEFAULT_MODEL:
                     return True
             return False
