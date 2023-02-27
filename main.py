@@ -266,6 +266,7 @@ def load_config(config: dict) -> Accounts:
 
 
 def cache_login(accounts: Accounts, cache_directory: str):
+    invalid_id = []
     for id_ in accounts.accounts:
         account = accounts.accounts[id_]
         access_token = ""
@@ -290,8 +291,10 @@ def cache_login(accounts: Accounts, cache_directory: str):
                     }))
             print(f"login {id_} ({account.email}) success")
         else:
-            del accounts.accounts[id_]
+            invalid_id.append(id_)
             print(f"login {id_} ({account.email}) failed")
+    for id_ in invalid_id:
+        del accounts.accounts[id_]
 
 
 def run(host: str, port: int, dist: str, config: dict, cache: str):
