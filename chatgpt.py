@@ -38,6 +38,7 @@ def login_with_cookie(session_token: str, proxy: str = None) -> str:
 
 
 def set_session(session: requests.Session, access_token: str):
+    session.headers.clear()
     session.headers.update(
         {
             "Accept": "text/event-stream",

@@ -275,16 +275,23 @@ def cache_login(accounts: Accounts, cache_directory: str):
             access_token = account_cache.get("access_token")
         except FileNotFoundError:
             pass
+
+        print(f"login {id_} ({account.email}) ...")
         if len(access_token) == 0:
-            account.login()
+            logged_in = account.login()
         else:
-            account.login_with_token(access_token)
-        if account.access_token != access_token:
-            os.makedirs(cache_directory, 0o755, True)
-            with open(os.path.join(cache_directory, account.id + ".json"), 'w') as f:
-                f.write(json.dumps({
-                    "access_token": account.access_token
-                }))
+            logged_in = account.login_with_token(access_token)
+        if logged_in:
+            if account.access_token != access_token:
+                os.makedirs(cache_directory, 0o755, True)
+                with open(os.path.join(cache_directory, account.id + ".json"), 'w') as f:
+                    f.write(json.dumps({
+                        "access_token": account.access_token
+                    }))
+            print(f"login {id_} ({account.email}) success")
+        else:
+            del accounts.accounts[id_]
+            print(f"login {id_} ({account.email}) failed")
 
 
 def run(host: str, port: int, dist: str, config: dict, cache: str):

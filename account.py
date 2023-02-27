@@ -22,21 +22,22 @@ class Account:
             })
         self.proxy = proxy
 
-    def login(self):
+    def login(self) -> bool:
         access_token = chatgpt.login_with_cookie(self.session_token, self.proxy)
         chatgpt.set_session(self.session, access_token)
         logged_in = self.logged_in()
-        assert logged_in
         self.access_token = access_token
+        return logged_in
 
-    def login_with_token(self, access_token: str):
+    def login_with_token(self, access_token: str) -> bool:
         chatgpt.set_session(self.session, access_token)
         logged_in = self.logged_in()
         if logged_in:
             self.access_token = access_token
-            return
+            return True
         else:
-            self.login()
+            logged_in = self.login()
+        return logged_in
 
     def logged_in(self) -> bool:
         if len(self.session_token) == 0:
@@ -45,7 +46,7 @@ class Account:
         if response.status_code == http.HTTPStatus.OK:
             models = json.loads(response.content)
             detail = models.get("detail")
-            if detail.get("code") == "token_expired":
+            if detail is not None and detail.get("code") == "token_expired":
                 return False
             models_obj = models.get("models")
             if models_obj is None:
