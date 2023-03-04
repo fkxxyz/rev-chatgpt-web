@@ -22,7 +22,7 @@ cmd_accounts() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '.[] | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
+  jq -r '.[] | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
 }
 
 cmd_login() {
@@ -32,7 +32,7 @@ cmd_login() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '. | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
+  jq -r '. | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
 }
 
 cmd_login2() {
@@ -44,7 +44,7 @@ cmd_login2() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '. | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
+  jq -r '. | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
 }
 
 cmd_models() {

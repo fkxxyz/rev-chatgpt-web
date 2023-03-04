@@ -38,6 +38,7 @@ def get_account_info(account: Account) -> dict:
         "id": account.id,
         "email": account.email,
         "valid": account.is_logged_in,
+        "counter": account.counter.get(),
         "user": None,
         "err": account.err_msg,
     }
@@ -62,6 +63,7 @@ def handle_get_account_list():
             "id": account.id,
             "email": account.email,
             "valid": account.is_logged_in,
+            "counter": account.counter.get(),
             "err": account.err_msg,
         })
     return flask.jsonify(result)
@@ -78,6 +80,7 @@ def handle_get_account_valid():
             "id": account.id,
             "email": account.email,
             "valid": account.is_logged_in,
+            "counter": account.counter.get(),
             "err": account.err_msg,
         })
     return flask.jsonify(result)

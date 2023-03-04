@@ -6,6 +6,7 @@ from collections import OrderedDict
 import requests
 
 import chatgpt
+from statistics import RequestCounter
 
 
 class Account:
@@ -17,6 +18,7 @@ class Account:
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
         self.is_busy = False
+        self.counter = RequestCounter(3600)
         self.err_msg = ""
         if proxy is not None:
             self.session.proxies.update({

@@ -182,6 +182,7 @@ def handle_send():
     msg_bytes = flask.request.get_data()
     msg_str = msg_bytes.decode()
     try:
+        account.counter.increase()
         response = chatgpt.send(account.session, conversation_id, parent_id, msg_str)
     except requests.exceptions.ReadTimeout as err:
         return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
