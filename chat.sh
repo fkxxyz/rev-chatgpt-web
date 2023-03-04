@@ -102,6 +102,17 @@ cmd_history() {
   done
 }
 
+cmd_dump() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/history?account=${ACCOUNT_ID}&id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_send() {
   local msg="$1"
   local id="$2"
@@ -171,6 +182,7 @@ Commands:
   title <id> <mid>
   title <id> <title>
   history <id>
+  dump <id>
   send <msg> <id> <mid>
   sendi <id> <mid>  (from stdin)
   get <mid>
