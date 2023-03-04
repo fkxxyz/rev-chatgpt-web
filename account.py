@@ -13,8 +13,11 @@ class Account:
         self.id = id_
         self.email = email
         self.session_token = session_token
-        self.access_token: str = ""
+        self.session_info: chatgpt.SessionInfo = None
+        self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
+        self.is_busy = False
+        self.err_msg = ""
         if proxy is not None:
             self.session.proxies.update({
                 "http": proxy,
@@ -23,38 +26,60 @@ class Account:
         self.proxy = proxy
 
     def login(self) -> bool:
-        access_token = chatgpt.login_with_cookie(self.session_token, self.proxy)
-        chatgpt.set_session(self.session, access_token)
-        logged_in = self.logged_in()
-        self.access_token = access_token
-        return logged_in
+        try:
+            self.session_info = chatgpt.login_with_cookie(self.session_token, self.proxy)
+        except requests.HTTPError as err:
+            self.err_msg = str(err)
+            return False
+        chatgpt.set_session(self.session, self.session_info.access_token)
+        self.is_logged_in = self.logged_in()
+        return self.is_logged_in
 
-    def login_with_token(self, access_token: str) -> bool:
-        chatgpt.set_session(self.session, access_token)
-        logged_in = self.logged_in()
-        if logged_in:
-            self.access_token = access_token
-            return True
-        else:
-            logged_in = self.login()
-        return logged_in
+    def load_session(self, session_json_file: str):
+        with open(session_json_file, 'rb') as f:
+            session_json = json.loads(f.read())
+        self.session_info = chatgpt.SessionInfo(session_json)
+
+    def save_session(self, session_json_file: str):
+        with open(session_json_file, 'w') as f:
+            f.write(json.dumps(self.session_info.__dict__(), indent=2))
+
+    def login_with_session_info(self) -> bool:
+        if self.session_info is None:
+            self.err_msg = "no session info"
+            return False
+        chatgpt.set_session(self.session, self.session_info.access_token)
+        self.is_logged_in = self.logged_in()
+        return self.is_logged_in
 
     def logged_in(self) -> bool:
-        if len(self.session_token) == 0:
+        if self.session_info is None:
+            self.err_msg = "no session info"
+            return False
+        if self.session_info.user is None:
+            self.err_msg = "no user info"
+            return False
+        if self.session_info.user.email != self.email:
+            self.err_msg = f"email not match: {self.session_info.user.email}"
             return False
         response = chatgpt.get_models(self.session)
         if response.status_code == http.HTTPStatus.OK:
             models = json.loads(response.content)
-            detail = models.get("detail")
-            if detail is not None and detail.get("code") == "token_expired":
+            r = chatgpt.get_response_body_detail(models)
+            if r is not None:
+                self.err_msg = r[0]
                 return False
             models_obj = models.get("models")
             if models_obj is None:
+                self.err_msg = "no modules"
                 return False
             for model in models_obj:
                 if model["slug"] == chatgpt.CHATGPT_DEFAULT_MODEL:
+                    self.err_msg = ""
                     return True
+            self.err_msg = "no slug module"
             return False
+        self.err_msg = response.content.decode()
         return False
 
     @staticmethod
@@ -75,11 +100,13 @@ class Account:
 class Accounts:
     def __init__(self):
         self.accounts: OrderedDict[str, Account] = OrderedDict()
+        self.proxy: str = None
 
     def load(self, config: dict):
         assert type(config.get("accounts")) == list
+        self.proxy = config.get("proxy")
         for account_config in config["accounts"]:
-            account = Account.from_dict(account_config, config.get("proxy"))
+            account = Account.from_dict(account_config, self.proxy)
             self.accounts[account.id] = account
 
     def save(self, config_file: str):
@@ -87,7 +114,10 @@ class Accounts:
         for id_ in self.accounts:
             accounts_list.append(self.accounts[id_].__dict__())
         with open(config_file, "w") as f:
-            f.write(json.dumps(accounts_list))
+            f.write(json.dumps({
+                "proxy": self.proxy,
+                "accounts": accounts_list,
+            }, indent=2))
 
     def set(self, account: Account):
         self.accounts[account.id] = account

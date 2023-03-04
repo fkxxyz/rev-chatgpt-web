@@ -1,40 +1,69 @@
+import http
 import json
 import uuid
-import logging
 import os
-
 import requests
 
-import OpenAIAuth.OpenAIAuth
-
-# Disable all logging
-logging.basicConfig(level=logging.ERROR)
-
 BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://chat.duti.tech/"
+LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
 CHATGPT_DEFAULT_MODEL = "text-davinci-002-render-sha"
 
 
-def login(email: str, password: str, proxy: str = None) -> str:
-    auth = OpenAIAuth.OpenAIAuth.OpenAIAuth(
-        email_address=email,
-        password=password,
-        proxy=proxy,
-    )
-    auth.begin()
-    access_token = auth.get_access_token()
-    return access_token
+class UserInfo:
+    def __init__(self, user_json: dict):
+        self.id: str = user_json['id']
+        self.name: str = user_json['name']
+        self.email: str = user_json['email']
+        self.image: str = user_json['image']
+        self.picture: str = user_json['picture']
+        self.groups: list = user_json['groups']
+
+    def __dict__(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'image': self.image,
+            'picture': self.picture,
+            'groups': self.groups,
+        }
 
 
-def login_with_cookie(session_token: str, proxy: str = None) -> str:
-    auth = OpenAIAuth.OpenAIAuth.OpenAIAuth(
-        email_address="",
-        password="",
-        proxy=proxy,
-    )
-    auth.session_token = session_token
-    access_token = auth.get_access_token()
-    return access_token
+class SessionInfo:
+    def __init__(self, session_json: dict):
+        self.user: UserInfo = UserInfo(session_json['user'])
+        self.expires: str = session_json['expires']
+        self.access_token: str = session_json['accessToken']
+
+    def __dict__(self) -> dict:
+        return {
+            'user': self.user.__dict__(),
+            'expires': self.expires,
+            'accessToken': self.access_token,
+        }
+
+
+def login(email: str, password: str, proxy: str = None) -> SessionInfo:
+    raise requests.exceptions.HTTPError("not implemented")
+
+
+def login_with_cookie(session_token: str, proxy: str = None) -> SessionInfo:
+    session: requests.Session = requests.Session()
+    if proxy is not None:
+        session.proxies.update({
+            "http": proxy,
+            "https": proxy,
+        })
+    session.cookies.set("__Secure-next-auth.session-token", session_token)
+    response = session.get(LOGIN_URL)
+    if response.status_code == 200:
+        try:
+            return SessionInfo(response.json())
+        except KeyError:
+            raise requests.HTTPError("invalid session info")
+    else:
+        raise requests.HTTPError(response)
 
 
 def set_session(session: requests.Session, access_token: str):
@@ -50,6 +79,37 @@ def set_session(session: requests.Session, access_token: str):
             "Referer": "https://chat.openai.com/chat",
         },
     )
+
+
+def get_response_body_detail(response_body: bytes | dict) -> (str, int):
+    if type(response_body) == bytes:
+        try:
+            response_json = json.loads(response_body)
+        except json.decoder.JSONDecodeError:
+            return None
+    else:
+        assert type(response_body) == dict
+        response_json = response_body
+    detail = response_json.get("detail")
+    if detail is None:
+        return None
+    if type(detail) != str:
+        assert type(detail) == dict
+        code = detail.get("code")
+        message = detail.get("message")
+        if code == 'token_expired':
+            return message, http.HTTPStatus.UNAUTHORIZED
+    detail_check = detail.lower()
+    if detail_check.find('too many requests') >= 0:
+        return detail, http.HTTPStatus.TOO_MANY_REQUESTS
+    if detail_check.find('not found') >= 0:
+        return detail, http.HTTPStatus.NOT_FOUND
+    if detail_check.find('something went wrong') >= 0:
+        return detail, http.HTTPStatus.NOT_ACCEPTABLE
+    if detail_check.find('gone wrong') >= 0:
+        return detail, http.HTTPStatus.NOT_ACCEPTABLE
+    if detail_check.find('only one message at a time') >= 0:
+        return detail, http.HTTPStatus.CONFLICT
 
 
 def get_conversations(session: requests.Session, offset=0, limit=20) -> requests.Response:

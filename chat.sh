@@ -17,12 +17,34 @@ roleMap["assistant"]="💻"
 
 cmd_accounts() {
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/accounts")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/account/list")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '.[] | "\(.id) \(.email)"' <<< "$json_str"
+  jq -r '.[] | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
+}
+
+cmd_login() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X PATCH "$BASE_URL/api/account/login?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '. | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
+}
+
+cmd_login2() {
+  local session_token
+  session_token="$(cat)"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -d "$session_token" "$BASE_URL/api/account/login?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '. | "\(.id) \(.email) \(.valid) \(.err)"' <<< "$json_str"
 }
 
 cmd_models() {
@@ -177,6 +199,9 @@ cmd_help(){
 
 Commands:
   accounts
+  login
+  login2
+
   models
   list [limit] [offset]
   title <id> <mid>
