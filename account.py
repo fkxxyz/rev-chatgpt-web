@@ -30,7 +30,7 @@ class Account:
     def login(self) -> bool:
         try:
             self.session_info = chatgpt.login_with_cookie(self.session_token, self.proxy)
-        except requests.HTTPError as err:
+        except requests.RequestException as err:
             self.err_msg = str(err)
             return False
         chatgpt.set_session(self.session, self.session_info.access_token)
@@ -64,7 +64,11 @@ class Account:
         if self.session_info.user.email != self.email:
             self.err_msg = f"email not match: {self.session_info.user.email}"
             return False
-        response = chatgpt.get_models(self.session)
+        try:
+            response = chatgpt.get_models(self.session)
+        except requests.RequestException as err:
+            self.err_msg = err
+            return False
         if response.status_code == http.HTTPStatus.OK:
             models = json.loads(response.content)
             r = chatgpt.get_response_body_detail(models)
