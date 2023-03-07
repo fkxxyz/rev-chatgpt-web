@@ -4,7 +4,7 @@ import uuid
 import os
 import requests
 
-BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://chat.duti.tech/"
+BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://chatgpt.duti.tech/"
 LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
 CHATGPT_DEFAULT_MODEL = "text-davinci-002-render-sha"
@@ -77,6 +77,11 @@ def set_session(session: requests.Session, access_token: str):
             "Connection": "close",
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://chat.openai.com/chat",
+        },
+    )
+    session.cookies.update(
+        {
+            "library": "revChatGPT",
         },
     )
 

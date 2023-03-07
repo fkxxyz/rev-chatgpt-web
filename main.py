@@ -56,7 +56,7 @@ def main() -> int:
     parser.add_argument('--host', '-o', type=str, help='host', default="127.0.0.1")
     parser.add_argument('--port', '-p', type=int, help='port', default=9987)
     parser.add_argument('--config', '-c', type=str, help='revChatGPT config.json',
-                        default=os.path.join(home_path, ".config", "revChatGPT", "config.json"))
+                        default=os.path.join(home_path, ".config", "revChatGPT", "web.json"))
     parser.add_argument('--cache', '-e', type=str, help='cache directory',
                         default=os.path.join(home_path, ".cache", "revChatGPT"))
     args = parser.parse_args()
