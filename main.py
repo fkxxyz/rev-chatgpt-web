@@ -11,8 +11,8 @@ from account import Accounts, Account
 from api import app, globalObject, account_login_with_access_token, account_login_with_session_token
 
 
-def load_config(config: dict) -> Accounts:
-    accounts = Accounts()
+def load_config(config: dict, cache_path: str) -> Accounts:
+    accounts = Accounts(cache_path)
     accounts.load(config)
     return accounts
 
@@ -31,7 +31,7 @@ def run(host: str, port: int, dist: str, config: str, cache: str):
     app._static_folder = dist
     with open(config, 'rb') as f:
         config_obj = json.load(f)
-    accounts = load_config(config_obj)
+    accounts = load_config(config_obj, cache)
     globalObject.cache_path = cache
     globalObject.config_path = config
     globalObject.accounts = accounts

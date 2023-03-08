@@ -1,5 +1,6 @@
 import http
 import json
+import os.path
 
 from collections import OrderedDict
 
@@ -10,7 +11,7 @@ from statistics import RequestCounter
 
 
 class Account:
-    def __init__(self, id_: str, email: str, session_token: str, proxy: str = None):
+    def __init__(self, id_: str, email: str, session_token: str, cache_path: str, proxy: str = None):
         self.id = id_
         self.email = email
         self.session_token = session_token
@@ -18,7 +19,7 @@ class Account:
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
         self.is_busy = False
-        self.counter = RequestCounter(7200)
+        self.counter = RequestCounter(7200, os.path.join(cache_path, self.id + ".counter.json"))
         self.err_msg = ""
         if proxy is not None:
             self.session.proxies.update({
@@ -89,11 +90,11 @@ class Account:
         return False
 
     @staticmethod
-    def from_dict(account_config: dict, proxy: str = None):
+    def from_dict(account_config: dict, cache_path: str, proxy: str = None):
         id_ = account_config["id"]
         email = account_config["email"]
         session_token = account_config["session_token"]
-        return Account(id_, email, session_token, proxy)
+        return Account(id_, email, session_token, cache_path, proxy)
 
     def __dict__(self) -> dict:
         return {
@@ -104,15 +105,16 @@ class Account:
 
 
 class Accounts:
-    def __init__(self):
+    def __init__(self, cache_path: str):
         self.accounts: OrderedDict[str, Account] = OrderedDict()
+        self.__cache_path = cache_path
         self.proxy: str = None
 
     def load(self, config: dict):
         assert type(config.get("accounts")) == list
         self.proxy = config.get("proxy")
         for account_config in config["accounts"]:
-            account = Account.from_dict(account_config, self.proxy)
+            account = Account.from_dict(account_config, self.__cache_path, self.proxy)
             self.accounts[account.id] = account
 
     def save(self, config_file: str):
