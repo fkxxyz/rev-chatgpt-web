@@ -17,13 +17,16 @@ from api.common import globalObject
 @app.route('/api/models')
 def handle_get_models():
     account_id = flask.request.args.get('account')
-    account, r = get_account_query(account_id)
+    account, r = get_account_query(account_id, False)
     if r is not None:
         return r
     response = chatgpt.get_models(account.session)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
-    response_json = json.loads(response.content)
+    try:
+        response_json = json.loads(response.content)
+    except json.JSONDecodeError:
+        return flask.make_response(response.content, http.HTTPStatus.INTERNAL_SERVER_ERROR)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:

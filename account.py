@@ -71,7 +71,11 @@ class Account:
             self.err_msg = err
             return False
         if response.status_code == http.HTTPStatus.OK:
-            models = json.loads(response.content)
+            try:
+                models = json.loads(response.content)
+            except json.JSONDecodeError:
+                self.err_msg = response.content.decode()
+                return False
             r = chatgpt.get_response_body_detail(models)
             if r is not None:
                 self.err_msg = r[0]

@@ -8,13 +8,13 @@ from api import app
 from api.common import globalObject
 
 
-def get_account_query(account_id: str) -> (Account, flask.Response):
+def get_account_query(account_id: str, must_logged_in: bool = True) -> (Account, flask.Response):
     account: Account = globalObject.default_account
     if account_id is not None and len(account_id) != 0:
         account = globalObject.accounts.accounts.get(account_id)
     if account is None:
         return None, flask.make_response('error: no such account', http.HTTPStatus.FORBIDDEN)
-    if not account.is_logged_in:
+    if must_logged_in and not account.is_logged_in:
         return account, flask.make_response('error: account is not logged in', http.HTTPStatus.UNAUTHORIZED)
     return account, None
 
