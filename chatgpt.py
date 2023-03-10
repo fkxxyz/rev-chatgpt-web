@@ -4,7 +4,7 @@ import uuid
 import os
 import requests
 
-BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://chatgpt.duti.tech/"
+BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.duti.tech/"
 LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
 CHATGPT_DEFAULT_MODEL = "text-davinci-002-render-sha"
