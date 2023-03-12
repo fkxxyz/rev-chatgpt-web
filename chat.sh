@@ -160,7 +160,7 @@ cmd_sendi() {
     echo "$result_mid"
     return "$exit_code"
   fi
-  watch -et -n 0.5 "$0" geti "$result_mid" <<< '' || true
+  watch -et -n 0.1 "$0" geti "$result_mid" <<< '' || true
   cmd_get "$result_mid"
 }
 
@@ -186,11 +186,45 @@ cmd_get() {
   printf '【%s】 %s\n%s%s\n\n' "${roleMap[$role]}" "${mid}" "${msg}" "${finished_flag}"
 }
 
+cmd_getl() {
+  local cols
+  cols="$(tput cols)"
+  local lines
+  lines="$(tput lines)"
+  local data
+  data="$(tail "-$lines")"
+  local lines_line=()
+  local line
+  local n l
+  while read -r line; do
+    n="$(wc -L <<< "$line")"
+    l=$((n/cols))
+    if [ $((n%cols)) != 0 ]; then
+      l=$((l+1))
+    fi
+    if [ "$l" == 0 ]; then
+      l=1
+    fi
+    lines_line+=("$l")
+  done <<< "$data"
+  local i n=0 l=0
+  for ((i = $((${#lines_line[@]}-1)); i >= 0; i--)); do
+    n="$((n+lines_line[i]))"
+    if [ "$n" -gt "$lines" ]; then
+      break
+    fi
+    l=$((l+1))
+  done
+  echo "$l"
+}
+
 cmd_geti() {
   local mid="$1"
   local result
   result="$("$0" get "$mid")"
-  cat <<< "$result" | tail -20
+  local lines
+  lines="$(cmd_getl <<< "$result")"
+  cat <<< "$result" | tail "-$lines"
   tail -1 <<< "$result" | grep -q '_$'
 }
 

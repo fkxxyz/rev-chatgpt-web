@@ -77,7 +77,7 @@ def handle_get_account_valid():
     for account_id in globalObject.accounts.accounts:
         account = globalObject.accounts.accounts[account_id]
         if not account.is_logged_in:
-            return
+            continue
         result.append({
             "id": account.id,
             "email": account.email,

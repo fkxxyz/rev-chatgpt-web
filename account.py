@@ -68,7 +68,7 @@ class Account:
         try:
             response = chatgpt.get_models(self.session)
         except requests.RequestException as err:
-            self.err_msg = err
+            self.err_msg = str(err)
             return False
         if response.status_code == http.HTTPStatus.OK:
             try:

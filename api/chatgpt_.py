@@ -71,8 +71,8 @@ def handle_change_title():
     if r is not None:
         return r
     conversation_id = flask.request.args.get('id')
-    if conversation_id is None or len(conversation_id) == 0:
-        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    if conversation_id is None or len(conversation_id) != 36:
+        return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
     title_bytes = flask.request.get_data()
     title_str = title_bytes.decode()
     if len(title_str) == 0:
@@ -96,8 +96,8 @@ def handle_gen_title():
     if r is not None:
         return r
     conversation_id = flask.request.args.get('id')
-    if conversation_id is None or len(conversation_id) == 0:
-        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    if conversation_id is None or len(conversation_id) != 36:
+        return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
     message_id = flask.request.args.get('mid')
     if message_id is None or len(message_id) == 0:
         return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
@@ -120,8 +120,8 @@ def handle_get_history():
     if r is not None:
         return r
     conversation_id = flask.request.args.get('id')
-    if conversation_id is None or len(conversation_id) == 0:
-        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    if conversation_id is None or len(conversation_id) != 36:
+        return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.get_conversation_history(account.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
         return flask.make_response(response.content, response.status_code)
@@ -146,6 +146,8 @@ def get_reply(account: Account, response: requests.Response, response_iter: Iter
                     print(line)
                     continue
                 globalObject.messages[mid] = line_resp
+                globalObject.messages[mid]["finished"] = False
+                globalObject.messages[mid]["error"] = ""
             elif line[:7] == b'event: ':
                 event = line[7:]
                 if event == 'ping':
