@@ -22,6 +22,8 @@ def handle_get_models():
         return r
     response = chatgpt.get_models(account.session)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     try:
         response_json = json.loads(response.content)
@@ -54,6 +56,8 @@ def handle_get_conversations():
         return flask.make_response('error: invalid offset or limit query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.get_conversations(account.session, offset, limit)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
@@ -79,6 +83,8 @@ def handle_change_title():
         return flask.make_response('error: missing title body', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.change_title(account.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
@@ -103,6 +109,8 @@ def handle_gen_title():
         return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.generate_title(account.session, conversation_id, message_id)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
@@ -124,6 +132,8 @@ def handle_get_history():
         return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.get_conversation_history(account.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
@@ -192,6 +202,8 @@ def handle_send():
     except requests.exceptions.ReadTimeout as err:
         return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
     if response.status_code != http.HTTPStatus.OK:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()
     line: bytes = next(response_iter)

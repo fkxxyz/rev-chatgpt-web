@@ -37,9 +37,10 @@ def get_account_info(account: Account) -> dict:
     response_json = {
         "id": account.id,
         "email": account.email,
-        "valid": account.is_logged_in,
+        "is_logged_in": account.is_logged_in,
         "counter": account.counter.get(),
         "is_busy": account.is_busy,
+        "is_disabled": account.is_disabled,
         "user": None,
         "err": account.err_msg,
     }
@@ -63,9 +64,10 @@ def handle_get_account_list():
         result.append({
             "id": account.id,
             "email": account.email,
-            "valid": account.is_logged_in,
+            "is_logged_in": account.is_logged_in,
             "counter": account.counter.get(),
             "is_busy": account.is_busy,
+            "is_disabled": account.is_disabled,
             "err": account.err_msg,
         })
     return flask.jsonify(result)
@@ -78,12 +80,15 @@ def handle_get_account_valid():
         account = globalObject.accounts.accounts[account_id]
         if not account.is_logged_in:
             continue
+        if account.is_disabled:
+            continue
         result.append({
             "id": account.id,
             "email": account.email,
-            "valid": account.is_logged_in,
+            "is_logged_in": account.is_logged_in,
             "counter": account.counter.get(),
             "is_busy": account.is_busy,
+            "is_disabled": account.is_disabled,
             "err": account.err_msg,
         })
     return flask.jsonify(result)
@@ -123,4 +128,26 @@ def handle_account_login():
     if not account.is_logged_in:
         return flask.make_response(account.err_msg, http.HTTPStatus.UNAUTHORIZED)
     globalObject.accounts.save(globalObject.config_path)
+    return flask.jsonify(get_account_info(account))
+
+
+@app.route('/api/account/disable', methods=['PATCH'])
+def handle_account_disable():
+    account_id = flask.request.args.get('account')
+    account, r = get_account_query(account_id, False)
+    if account is None:
+        return r
+
+    account.is_disabled = True
+    return flask.jsonify(get_account_info(account))
+
+
+@app.route('/api/account/enable', methods=['PATCH'])
+def handle_account_enable():
+    account_id = flask.request.args.get('account')
+    account, r = get_account_query(account_id)
+    if account is None:
+        return r
+
+    account.is_disabled = False
     return flask.jsonify(get_account_info(account))

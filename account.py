@@ -18,6 +18,7 @@ class Account:
         self.session_info: chatgpt.SessionInfo = None
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
+        self.is_disabled = False
         self.is_busy = False
         self.counter = RequestCounter(7200, os.path.join(cache_path, self.id + ".counter.json"))
         self.err_msg = ""

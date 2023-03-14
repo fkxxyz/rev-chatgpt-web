@@ -22,7 +22,24 @@ cmd_accounts() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '.[] | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
+  local id email valid disabled counter disabled_color valid_color
+  while read -r id email valid disabled counter; do
+    if [ "$disabled" == "true" ]; then
+      disabled_color=90
+    else
+      disabled_color=37
+    fi
+    if [ "$valid" == "true" ]; then
+      valid_color=92
+    else
+      valid_color=31
+    fi
+    printf '\e[1;%sm%s\e[0m \e[1;%sm%s\e[0m \e[1;%sm%s\e[0m\n' \
+      "$disabled_color" "$id" \
+      "$valid_color" "$email" \
+      "$disabled_color" "$counter" \
+      "$@"
+  done < <(jq -r '.[] | "\(.id) \(.email) \(.is_logged_in) \(.is_disabled) \(.counter)"' <<< "$json_str")
 }
 
 cmd_login() {
@@ -32,7 +49,7 @@ cmd_login() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '. | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
+  jq -r . <<< "$json_str"
 }
 
 cmd_login2() {
@@ -44,7 +61,37 @@ cmd_login2() {
     echo "$json_str"
     return "$exit_code"
   fi
-  jq -r '. | "\(.id) \(.email) \(.valid) \(.counter) \(.err)"' <<< "$json_str"
+  jq -r . <<< "$json_str"
+}
+
+cmd_info() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/account?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
+cmd_disable() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X PATCH "$BASE_URL/api/account/disable?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
+cmd_enable() {
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X PATCH "$BASE_URL/api/account/enable?account=${ACCOUNT_ID}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
 }
 
 cmd_models() {
@@ -233,8 +280,11 @@ cmd_help(){
 
 Commands:
   accounts
+  info
   login
   login2
+  disable
+  enable
 
   models
   list [limit] [offset]
