@@ -203,6 +203,8 @@ def handle_send():
             return flask.make_response(r[0], r[1])
         return flask.make_response(line, http.HTTPStatus.INTERNAL_SERVER_ERROR)
     line_resp = json.loads(line[6:])
+    line_resp["finished"] = False
+    line_resp["error"] = ""
     new_mid = line_resp["message"]["id"]
     globalObject.messages[new_mid] = line_resp
     account.is_busy = True
