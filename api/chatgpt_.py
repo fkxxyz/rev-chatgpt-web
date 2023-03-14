@@ -13,6 +13,11 @@ from api.account_ import get_account_query
 from api import app
 from api.common import globalObject
 
+logged_out_code_set = {
+    http.HTTPStatus.UNAUTHORIZED,
+    http.HTTPStatus.FORBIDDEN,
+}
+
 
 @app.route('/api/models')
 def handle_get_models():
@@ -22,7 +27,7 @@ def handle_get_models():
         return r
     response = chatgpt.get_models(account.session)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     try:
@@ -56,7 +61,7 @@ def handle_get_conversations():
         return flask.make_response('error: invalid offset or limit query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.get_conversations(account.session, offset, limit)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
@@ -83,7 +88,7 @@ def handle_change_title():
         return flask.make_response('error: missing title body', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.change_title(account.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
@@ -109,7 +114,7 @@ def handle_gen_title():
         return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.generate_title(account.session, conversation_id, message_id)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
@@ -132,7 +137,7 @@ def handle_get_history():
         return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
     response = chatgpt.get_conversation_history(account.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
@@ -202,19 +207,31 @@ def handle_send():
     except requests.exceptions.ReadTimeout as err:
         return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
     if response.status_code != http.HTTPStatus.OK:
-        if response.status_code == http.HTTPStatus.UNAUTHORIZED:
+        if response.status_code in logged_out_code_set:
             account.is_logged_in = False
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()
-    line: bytes = next(response_iter)
-    if line[:6] != b'data: ':
-        r = chatgpt.get_response_body_detail(line)
-        if r is not None:
-            if r[1] == http.HTTPStatus.UNAUTHORIZED:
-                account.is_logged_in = False
-            return flask.make_response(r[0], r[1])
-        return flask.make_response(line, http.HTTPStatus.INTERNAL_SERVER_ERROR)
-    line_resp = json.loads(line[6:])
+    try:
+        for i in range(12):
+            line: bytes = next(response_iter)
+            if line[:6] != b'data: ':
+                r = chatgpt.get_response_body_detail(line)
+                if r is not None:
+                    if r[1] == http.HTTPStatus.UNAUTHORIZED:
+                        account.is_logged_in = False
+                    return flask.make_response(r[0], r[1])
+                return flask.make_response(line, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            line_resp = json.loads(line[6:])
+            role = line_resp["message"]["author"]["role"]
+            if role == "assistant":
+                break
+        else:
+            return flask.make_response("assistant role not found", http.HTTPStatus.INTERNAL_SERVER_ERROR)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
+    role = line_resp["message"]["author"]["role"]
+    if role != "assistant":
+        return flask.make_response("assistant role not found", http.HTTPStatus.INTERNAL_SERVER_ERROR)
     line_resp["finished"] = False
     line_resp["error"] = ""
     new_mid = line_resp["message"]["id"]
