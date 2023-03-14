@@ -11,14 +11,15 @@ from statistics import RequestCounter
 
 
 class Account:
-    def __init__(self, id_: str, email: str, session_token: str, cache_path: str, proxy: str = None):
+    def __init__(self, id_: str, email: str, session_token: str, cache_path: str,
+                 disabled: bool = False, proxy: str = None):
         self.id = id_
         self.email = email
         self.session_token = session_token
         self.session_info: chatgpt.SessionInfo = None
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
-        self.is_disabled = False
+        self.is_disabled = disabled
         self.is_busy = False
         self.counter = RequestCounter(7200, os.path.join(cache_path, self.id + ".counter.json"))
         self.err_msg = ""
@@ -99,13 +100,15 @@ class Account:
         id_ = account_config["id"]
         email = account_config["email"]
         session_token = account_config["session_token"]
-        return Account(id_, email, session_token, cache_path, proxy)
+        disabled = account_config.get("disabled") or False
+        return Account(id_, email, session_token, cache_path, disabled, proxy)
 
-    def __dict__(self) -> dict:
+    def asdict(self) -> dict:
         return {
             "id": self.id,
             "email": self.email,
             "session_token": self.session_token,
+            "disabled": self.is_disabled,
         }
 
 
@@ -125,7 +128,7 @@ class Accounts:
     def save(self, config_file: str):
         accounts_list = []
         for id_ in self.accounts:
-            accounts_list.append(self.accounts[id_].__dict__())
+            accounts_list.append(self.accounts[id_].asdict())
         with open(config_file, "w") as f:
             f.write(json.dumps({
                 "proxy": self.proxy,

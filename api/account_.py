@@ -138,7 +138,9 @@ def handle_account_disable():
     if account is None:
         return r
 
-    account.is_disabled = True
+    if not account.is_disabled:
+        account.is_disabled = True
+        globalObject.accounts.save(globalObject.config_path)
     return flask.jsonify(get_account_info(account))
 
 
@@ -149,5 +151,7 @@ def handle_account_enable():
     if account is None:
         return r
 
-    account.is_disabled = False
+    if account.is_disabled:
+        account.is_disabled = False
+        globalObject.accounts.save(globalObject.config_path)
     return flask.jsonify(get_account_info(account))
