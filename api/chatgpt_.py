@@ -214,14 +214,20 @@ def handle_send():
     try:
         for i in range(12):
             line: bytes = next(response_iter)
+            if len(line) == 0:
+                continue
             if line[:6] != b'data: ':
                 r = chatgpt.get_response_body_detail(line)
                 if r is not None:
                     if r[1] == http.HTTPStatus.UNAUTHORIZED:
                         account.is_logged_in = False
                     return flask.make_response(r[0], r[1])
-                return flask.make_response(line, http.HTTPStatus.INTERNAL_SERVER_ERROR)
-            line_resp = json.loads(line[6:])
+                continue
+            try:
+                line_resp = json.loads(line[6:])
+            except json.decoder.JSONDecodeError:
+                print(line)
+                continue
             role = line_resp["message"]["author"]["role"]
             if role == "assistant":
                 break
