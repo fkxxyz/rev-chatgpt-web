@@ -96,12 +96,21 @@ class Account:
         return False
 
     @staticmethod
-    def from_dict(account_config: dict, cache_path: str, proxy: str = None):
+    def from_dict(account_config: dict, cache_path: str, proxy: str | None = None):
         id_ = account_config["id"]
         email = account_config["email"]
         session_token = account_config["session_token"]
         disabled = account_config.get("disabled") or False
         return Account(id_, email, session_token, cache_path, disabled, proxy)
+
+    @staticmethod
+    def from_session_info(id_: str, session_token: str, session_info: chatgpt.SessionInfo, cache_path: str,
+                          proxy: str | None = None):
+        account = Account(id_, session_info.user.email, session_token, cache_path, False, proxy)
+        account.session_info = session_info
+        chatgpt.set_session(account.session, account.session_info.access_token)
+        account.is_logged_in = account.logged_in()
+        return account
 
     def asdict(self) -> dict:
         return {
@@ -116,7 +125,7 @@ class Accounts:
     def __init__(self, cache_path: str):
         self.accounts: OrderedDict[str, Account] = OrderedDict()
         self.__cache_path = cache_path
-        self.proxy: str = None
+        self.proxy: str | None = None
 
     def load(self, config: dict):
         assert type(config.get("accounts")) == list
@@ -134,6 +143,28 @@ class Accounts:
                 "proxy": self.proxy,
                 "accounts": accounts_list,
             }, indent=2))
+
+    def apply(self, session_token: str, config_file: str) -> Account:
+        try:
+            session_info = chatgpt.login_with_cookie(session_token, self.proxy)
+        except requests.RequestException as err:
+            raise err
+        for id_ in self.accounts:
+            if self.accounts[id_].email == session_info.user.email:
+                account = self.accounts[id_]
+                account.session_info = session_info
+                chatgpt.set_session(account.session, account.session_info.access_token)
+                account.is_logged_in = account.logged_in()
+                break
+        else:
+            account = Account.from_session_info(
+                session_info.user.email, session_token, session_info,
+                self.__cache_path, self.proxy,
+            )
+            self.accounts[session_info.user.email] = account
+        self.save(config_file)
+        account.save_session(os.path.join(self.__cache_path, self.__cache_path, account.id + ".json"))
+        return account
 
     def set(self, account: Account):
         self.accounts[account.id] = account

@@ -64,6 +64,18 @@ cmd_login2() {
   jq -r . <<< "$json_str"
 }
 
+cmd_apply() {
+  local session_token
+  session_token="$(cat)"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X PUT -d "$session_token" "$BASE_URL/api/account")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
 cmd_info() {
   local json_str exit_code=0
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/account?account=${ACCOUNT_ID}")" || exit_code="$?"
