@@ -183,6 +183,17 @@ cmd_history() {
   done
 }
 
+cmd_delete() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X DELETE "$BASE_URL/api/conversation?account=${ACCOUNT_ID}&id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_dump() {
   local id="$1"
   local json_str exit_code=0
@@ -303,6 +314,7 @@ Commands:
   title <id> <mid>
   title <id> <title>
   history <id>
+  delete <id>
   dump <id>
   send <msg> <id> <mid>
   sendi <id> <mid>  (from stdin)

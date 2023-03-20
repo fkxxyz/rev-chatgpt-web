@@ -73,6 +73,29 @@ def handle_get_conversations():
     return flask.jsonify(response_json)
 
 
+@app.route('/api/conversation', methods=['DELETE'])
+def handle_delete_conversation():
+    account_id = flask.request.args.get('account')
+    account, r = get_account_query(account_id)
+    if r is not None:
+        return r
+    conversation_id = flask.request.args.get('id')
+    if conversation_id is None or len(conversation_id) != 36:
+        return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
+    response = chatgpt.delete_conversation(account.session, conversation_id)
+    if response.status_code != http.HTTPStatus.OK:
+        if response.status_code in logged_out_code_set:
+            account.is_logged_in = False
+        return flask.make_response(response.content, response.status_code)
+    response_json = json.loads(response.content)
+    r = chatgpt.get_response_body_detail(response_json)
+    if r is not None:
+        if r[1] == http.HTTPStatus.UNAUTHORIZED:
+            account.is_logged_in = False
+        return flask.make_response(r[0], r[1])
+    return flask.jsonify(response_json)
+
+
 @app.route('/api/title', methods=['PATCH'])
 def handle_change_title():
     account_id = flask.request.args.get('account')
