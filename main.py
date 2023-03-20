@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import threading
+import time
 from collections import OrderedDict
 
 from account import Accounts, Account
@@ -23,6 +24,7 @@ def login_all(accounts: OrderedDict[str, Account]):
         account_login_with_access_token(account)
         if not account.is_logged_in:
             account_login_with_session_token(account)
+        time.sleep(2)
 
 
 def run(host: str, port: int, dist: str, config: str, cache: str):

@@ -78,7 +78,7 @@ class Account:
             self.err_msg = f"email not match: {self.session_info.user.email}"
             return False
         try:
-            response = chatgpt.get_models(self.session)
+            response = chatgpt.get_models(self.session, 10)
         except requests.RequestException as err:
             self.err_msg = str(err)
             return False
@@ -102,7 +102,7 @@ class Account:
                     return True
             self.err_msg = "no slug module"
             return False
-        self.err_msg = response.content.decode()
+        self.err_msg = f"http status({response.status_code}): " + response.content.decode()
         return False
 
     @staticmethod

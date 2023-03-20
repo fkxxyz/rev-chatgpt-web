@@ -151,9 +151,9 @@ def change_title(session: requests.Session, conversation_id: str, title: str) ->
     return session.patch(url, data=f'{{"title": "{title}"}}'.encode())
 
 
-def get_models(session: requests.Session):
+def get_models(session: requests.Session, timeout: int | None = None):
     url = BASE_URL + f"api/models"
-    return session.get(url)
+    return session.get(url, timeout=timeout)
 
 
 def send(session: requests.Session, conversation_id: str, parent_id: str,
