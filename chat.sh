@@ -318,6 +318,8 @@ Commands:
   info
   login
   login2
+  apply <<< session_token
+  apply2 <email> <password>
   disable
   enable
 
