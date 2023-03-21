@@ -11,7 +11,7 @@ cache = json.load(open(os.path.join(home_path, ".cache", "revChatGPT", "config.j
 session_token = config['accounts'][0]['session_token']
 access_token = cache['access_token']
 
-account = Account("fkxxyz", "fkxxyz@xxxx.com", session_token, "/tmp", config['proxy'])
+account = Account("fkxxyz", "fkxxyz@xxxx.com", "xxxxxxxx", session_token, "/tmp", config['proxy'])
 
 # 尝试用 access_token 访问
 is_logged_in = account.login_with_session_info()

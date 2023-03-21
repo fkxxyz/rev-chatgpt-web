@@ -4,6 +4,8 @@ import uuid
 import os
 import requests
 
+import OpenAIAuth
+
 BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.duti.tech/"
 LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
@@ -44,26 +46,26 @@ class SessionInfo:
         }
 
 
-def login(email: str, password: str, proxy: str = None) -> SessionInfo:
-    raise requests.exceptions.HTTPError("not implemented")
+def login(email: str, password: str, proxy: str = None) -> str:
+    auth = OpenAIAuth.Authenticator(email, password, proxy)
+    try:
+        auth.login()
+    except OpenAIAuth.Error as err:
+        raise err
+    return auth.session_token
 
 
-def login_with_cookie(session_token: str, proxy: str = None) -> SessionInfo:
-    session: requests.Session = requests.Session()
-    if proxy is not None:
-        session.proxies.update({
-            "http": proxy,
-            "https": proxy,
-        })
-    session.cookies.set("__Secure-next-auth.session-token", session_token)
-    response = session.get(LOGIN_URL)
-    if response.status_code == 200:
-        try:
-            return SessionInfo(response.json())
-        except KeyError:
-            raise requests.HTTPError("invalid session info")
-    else:
-        raise requests.HTTPError(response)
+def get_session_info(session_token: str, proxy: str = None) -> SessionInfo:
+    auth = OpenAIAuth.Authenticator("", "", proxy)
+    auth.session_token = session_token
+    try:
+        session_dict = auth.get_session_info()
+    except OpenAIAuth.Error as err:
+        raise requests.HTTPError(str(err))
+    try:
+        return SessionInfo(session_dict)
+    except KeyError:
+        raise requests.HTTPError("invalid session info")
 
 
 def set_session(session: requests.Session, access_token: str):

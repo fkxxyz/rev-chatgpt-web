@@ -6,17 +6,19 @@ from collections import OrderedDict
 
 import requests
 
+import OpenAIAuth
 import chatgpt
 from statistics import RequestCounter
 
 
 class Account:
-    def __init__(self, id_: str, email: str, session_token: str, cache_path: str,
+    def __init__(self, id_: str, email: str, password: str, session_token: str, cache_path: str,
                  disabled: bool = False, proxy: str = None):
         self.id = id_
         self.email = email
+        self.password = password
         self.session_token = session_token
-        self.session_info: chatgpt.SessionInfo = None
+        self.session_info: chatgpt.SessionInfo | None = None
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
         self.is_disabled = disabled
@@ -30,10 +32,21 @@ class Account:
             })
         self.proxy = proxy
 
+    def login_with_password(self) -> bool:
+        print(f"password login({self.email}) ...")
+        try:
+            self.session_token = chatgpt.login(self.email, self.password, self.proxy)
+            print(f"password login({self.email}) success")
+            return True
+        except (requests.RequestException, OpenAIAuth.Error) as err:
+            self.err_msg = str(err)
+            print(f"password login({self.email}) failed")
+            return False
+
     def login(self) -> bool:
         print(f"session_token login({self.email}) ...")
         try:
-            self.session_info = chatgpt.login_with_cookie(self.session_token, self.proxy)
+            self.session_info = chatgpt.get_session_info(self.session_token, self.proxy)
         except requests.RequestException as err:
             self.err_msg = str(err)
             return False
@@ -109,14 +122,17 @@ class Account:
     def from_dict(account_config: dict, cache_path: str, proxy: str | None = None):
         id_ = account_config["id"]
         email = account_config["email"]
+        password = account_config.get("password")
+        if password is None:
+            password = ""
         session_token = account_config["session_token"]
         disabled = account_config.get("disabled") or False
-        return Account(id_, email, session_token, cache_path, disabled, proxy)
+        return Account(id_, email, password, session_token, cache_path, disabled, proxy)
 
     @staticmethod
-    def from_session_info(id_: str, session_token: str, session_info: chatgpt.SessionInfo, cache_path: str,
-                          proxy: str | None = None):
-        account = Account(id_, session_info.user.email, session_token, cache_path, False, proxy)
+    def from_session_info(id_: str, password: str, session_token: str, session_info: chatgpt.SessionInfo,
+                          cache_path: str, proxy: str | None = None):
+        account = Account(id_, session_info.user.email, password, session_token, cache_path, False, proxy)
         account.session_info = session_info
         print(f"session_token login({account.email}) ...")
         chatgpt.set_session(account.session, account.session_info.access_token)
@@ -131,6 +147,7 @@ class Account:
         return {
             "id": self.id,
             "email": self.email,
+            "password": self.password,
             "session_token": self.session_token,
             "disabled": self.is_disabled,
         }
@@ -159,9 +176,19 @@ class Accounts:
                 "accounts": accounts_list,
             }, indent=2))
 
-    def apply(self, session_token: str, config_file: str) -> Account:
+    def apply(self, email: str, password: str, session_token: str, config_file: str) -> Account:
+        if len(session_token) == 0:
+            if len(email) == 0 or len(password) == 0:
+                raise requests.RequestException("no email or password")
+            try:
+                print(f"password login({email}) ...")
+                session_token = chatgpt.login(email, password, self.proxy)
+                print(f"password login({email}) success")
+            except (requests.RequestException, OpenAIAuth.Error) as err:
+                print(f"password login({email}) failed")
+                raise err
         try:
-            session_info = chatgpt.login_with_cookie(session_token, self.proxy)
+            session_info = chatgpt.get_session_info(session_token, self.proxy)
         except requests.RequestException as err:
             raise err
         for id_ in self.accounts:
@@ -178,7 +205,7 @@ class Accounts:
                 break
         else:
             account = Account.from_session_info(
-                session_info.user.email, session_token, session_info,
+                session_info.user.email, password, session_token, session_info,
                 self.__cache_path, self.proxy,
             )
             self.accounts[session_info.user.email] = account

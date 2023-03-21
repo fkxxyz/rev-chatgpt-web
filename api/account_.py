@@ -4,6 +4,7 @@ import os
 import flask
 import requests
 
+import OpenAIAuth
 from account import Account
 from api import app
 from api.common import globalObject
@@ -113,11 +114,19 @@ def handle_get_account_info():
             return r
         return flask.jsonify(get_account_info(account))
     elif flask.request.method == 'PUT':
+        email = flask.request.args.get('email')
+        if email is None:
+            email = ""
+        password = flask.request.args.get('password')
+        if password is None:
+            password = ""
         session_token = flask.request.get_data().decode()
         try:
-            account = globalObject.accounts.apply(session_token, globalObject.config_path)
+            account = globalObject.accounts.apply(email, password, session_token, globalObject.config_path)
         except requests.RequestException as err:
             return flask.make_response(str(err), http.HTTPStatus.UNAUTHORIZED)
+        except OpenAIAuth.Error as err:
+            return flask.make_response(err.details, err.status_code)
         return flask.jsonify(get_account_info(account))
     elif flask.request.method == 'DELETE':
         account_id = flask.request.args.get('account')
