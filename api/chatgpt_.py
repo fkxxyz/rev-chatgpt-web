@@ -232,6 +232,11 @@ def handle_send():
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account.is_logged_in = False
+        r = chatgpt.get_response_body_detail(response.content)
+        if r is not None:
+            if r[1] == http.HTTPStatus.UNAUTHORIZED:
+                account.is_logged_in = False
+            return flask.make_response(r[0], r[1])
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()
     try:
