@@ -34,6 +34,9 @@ class Account:
         self.proxy = proxy
 
     def login_with_password(self) -> bool:
+        if len(self.password) == 0:
+            self.err_msg = "no password"
+            return False
         print(f"password login({self.email}) ...")
         try:
             self.session_token = chatgpt.login(self.email, self.password, self.proxy)
@@ -53,6 +56,7 @@ class Account:
             return False
         chatgpt.set_session(self.session, self.session_info.access_token)
         self.is_logged_in = self.logged_in()
+        self.session_info.valid = self.is_logged_in
         if self.is_logged_in:
             print(f"session_token login({self.email}) success")
         else:
@@ -63,22 +67,19 @@ class Account:
         with open(session_json_file, 'rb') as f:
             session_json = json.loads(f.read())
         self.session_info = chatgpt.SessionInfo(session_json)
+        self.is_logged_in = self.session_info.valid
 
     def save_session(self, session_json_file: str):
         with open(session_json_file, 'w') as f:
-            f.write(json.dumps(self.session_info.__dict__(), indent=2))
+            f.write(json.dumps(self.session_info.asdict(), indent=2))
 
     def login_with_session_info(self) -> bool:
         if self.session_info is None:
             self.err_msg = "no session info"
             return False
-        print(f"access_token login({self.email}) ...")
         chatgpt.set_session(self.session, self.session_info.access_token)
         self.is_logged_in = self.logged_in()
-        if self.is_logged_in:
-            print(f"access_token login({self.email}) success")
-        else:
-            print(f"access_token login({self.email}) failed")
+        self.session_info.valid = self.is_logged_in
         return self.is_logged_in
 
     def logged_in(self) -> bool:
@@ -139,6 +140,7 @@ class Account:
         print(f"session_token login({account.email}) ...")
         chatgpt.set_session(account.session, account.session_info.access_token)
         account.is_logged_in = account.logged_in()
+        account.session_info.valid = account.is_logged_in
         if account.is_logged_in:
             print(f"session_token login({account.email}) success")
         else:
@@ -201,6 +203,7 @@ class Accounts:
                 print(f"session_token login({account.email}) ...")
                 chatgpt.set_session(account.session, account.session_info.access_token)
                 account.is_logged_in = account.logged_in()
+                session_info.valid = account.is_logged_in
                 if account.is_logged_in:
                     print(f"session_token login({account.email}) success")
                 else:

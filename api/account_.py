@@ -35,6 +35,21 @@ def account_login_with_session_token(account: Account):
         account.save_session(os.path.join(globalObject.cache_path, account.id + ".json"))
 
 
+def account_login_with_password(account: Account):
+    account.login_with_password()
+    if account.is_logged_in:
+        account.save_session(os.path.join(globalObject.cache_path, account.id + ".json"))
+        globalObject.accounts.save(globalObject.config_path)
+
+
+# 标记帐号 token 已无效
+def account_logout(account: Account):
+    account.is_logged_in = False
+    if account.session_info is not None:
+        account.session_info.valid = False
+    account.save_session(os.path.join(globalObject.cache_path, account.id + ".json"))
+
+
 def get_account_info(account: Account) -> dict:
     response_json = {
         "id": account.id,
@@ -48,6 +63,9 @@ def get_account_info(account: Account) -> dict:
         "err": account.err_msg,
     }
     if account.session_info is not None:
+        response_json["session"] = {
+            "expires": account.session_info.expires,
+        }
         response_json["user"] = {
             "id": account.session_info.user.id,
             "name": account.session_info.user.name,
@@ -164,6 +182,8 @@ def handle_account_login():
         account_login_with_access_token(account)
         if not account.is_logged_in:
             account_login_with_session_token(account)
+        if not account.is_logged_in:
+            account_login_with_password(account)
     if not account.is_logged_in:
         return flask.make_response(account.err_msg, http.HTTPStatus.UNAUTHORIZED)
     globalObject.accounts.save(globalObject.config_path)

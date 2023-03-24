@@ -9,7 +9,7 @@ import requests
 
 import chatgpt
 from account import Account
-from api.account_ import get_account_query
+from api.account_ import get_account_query, account_logout
 from api import app
 from api.common import globalObject
 
@@ -28,7 +28,7 @@ def handle_get_models():
     response = chatgpt.get_models(account.session)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     try:
         response_json = json.loads(response.content)
@@ -37,7 +37,7 @@ def handle_get_models():
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -62,13 +62,13 @@ def handle_get_conversations():
     response = chatgpt.get_conversations(account.session, offset, limit)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -85,13 +85,13 @@ def handle_delete_conversation():
     response = chatgpt.delete_conversation(account.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -112,13 +112,13 @@ def handle_change_title():
     response = chatgpt.change_title(account.session, conversation_id, title_str)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -138,13 +138,13 @@ def handle_gen_title():
     response = chatgpt.generate_title(account.session, conversation_id, message_id)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -161,13 +161,13 @@ def handle_get_history():
     response = chatgpt.get_conversation_history(account.session, conversation_id)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(response.content, response.status_code)
     response_json = json.loads(response.content)
     r = chatgpt.get_response_body_detail(response_json)
     if r is not None:
         if r[1] == http.HTTPStatus.UNAUTHORIZED:
-            account.is_logged_in = False
+            account_logout(account)
         return flask.make_response(r[0], r[1])
     return flask.jsonify(response_json)
 
@@ -231,11 +231,11 @@ def handle_send():
         return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
-            account.is_logged_in = False
+            account_logout(account)
         r = chatgpt.get_response_body_detail(response.content)
         if r is not None:
             if r[1] == http.HTTPStatus.UNAUTHORIZED:
-                account.is_logged_in = False
+                account_logout(account)
             return flask.make_response(r[0], r[1])
         return flask.make_response(response.content, response.status_code)
     response_iter = response.iter_lines()
@@ -248,7 +248,7 @@ def handle_send():
                 r = chatgpt.get_response_body_detail(line)
                 if r is not None:
                     if r[1] == http.HTTPStatus.UNAUTHORIZED:
-                        account.is_logged_in = False
+                        account_logout(account)
                     return flask.make_response(r[0], r[1])
                 continue
             try:

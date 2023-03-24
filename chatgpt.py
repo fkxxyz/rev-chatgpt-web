@@ -21,7 +21,7 @@ class UserInfo:
         self.picture: str = user_json['picture']
         self.groups: list = user_json['groups']
 
-    def __dict__(self) -> dict:
+    def asdict(self) -> dict:
         return {
             'id': self.id,
             'name': self.name,
@@ -37,12 +37,14 @@ class SessionInfo:
         self.user: UserInfo = UserInfo(session_json['user'])
         self.expires: str = session_json['expires']
         self.access_token: str = session_json['accessToken']
+        self.valid: bool = session_json.get('valid')
 
-    def __dict__(self) -> dict:
+    def asdict(self) -> dict:
         return {
-            'user': self.user.__dict__(),
+            'user': self.user.asdict(),
             'expires': self.expires,
             'accessToken': self.access_token,
+            'valid': self.valid,
         }
 
 

@@ -18,15 +18,6 @@ def load_config(config: dict, cache_path: str) -> Accounts:
     return accounts
 
 
-def login_all(accounts: OrderedDict[str, Account]):
-    for account_id in accounts:
-        account = accounts[account_id]
-        account_login_with_access_token(account)
-        if not account.is_logged_in:
-            account_login_with_session_token(account)
-        time.sleep(2)
-
-
 def run(host: str, port: int, dist: str, config: str, cache: str):
     from waitress import serve
 
@@ -44,7 +35,6 @@ def run(host: str, port: int, dist: str, config: str, cache: str):
         except FileNotFoundError:
             pass
     os.makedirs(cache, 0o755, True)
-    threading.Thread(target=login_all, args=(accounts.accounts,)).start()
     for account_id in accounts.accounts:
         globalObject.default_account = accounts.accounts[account_id]
         break
