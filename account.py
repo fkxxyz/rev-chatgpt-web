@@ -13,7 +13,7 @@ from statistics import RequestCounter
 
 class Account:
     def __init__(self, id_: str, email: str, password: str, session_token: str, cache_path: str,
-                 disabled: bool = False, proxy: str = None):
+                 disabled: bool = False, level: int = 65536, proxy: str = None):
         self.id = id_
         self.email = email
         self.password = password
@@ -22,6 +22,7 @@ class Account:
         self.is_logged_in: bool = False
         self.session: requests.Session = requests.Session()
         self.is_disabled = disabled
+        self.level = level
         self.is_busy = False
         self.counter = RequestCounter(7200, os.path.join(cache_path, self.id + ".counter.json"))
         self.err_msg = ""
@@ -127,12 +128,13 @@ class Account:
             password = ""
         session_token = account_config["session_token"]
         disabled = account_config.get("disabled") or False
-        return Account(id_, email, password, session_token, cache_path, disabled, proxy)
+        level = account_config.get("level") or 65536
+        return Account(id_, email, password, session_token, cache_path, disabled, level, proxy)
 
     @staticmethod
     def from_session_info(id_: str, password: str, session_token: str, session_info: chatgpt.SessionInfo,
-                          cache_path: str, proxy: str | None = None):
-        account = Account(id_, session_info.user.email, password, session_token, cache_path, False, proxy)
+                          cache_path: str, level: int = 65536, proxy: str | None = None):
+        account = Account(id_, session_info.user.email, password, session_token, cache_path, False, level, proxy)
         account.session_info = session_info
         print(f"session_token login({account.email}) ...")
         chatgpt.set_session(account.session, account.session_info.access_token)
@@ -150,6 +152,7 @@ class Account:
             "password": self.password,
             "session_token": self.session_token,
             "disabled": self.is_disabled,
+            "level": self.level,
         }
 
 
@@ -176,7 +179,7 @@ class Accounts:
                 "accounts": accounts_list,
             }, indent=2))
 
-    def apply(self, email: str, password: str, session_token: str, config_file: str) -> Account:
+    def apply(self, email: str, password: str, level: int, session_token: str, config_file: str) -> Account:
         if len(session_token) == 0:
             if len(email) == 0 or len(password) == 0:
                 raise requests.RequestException("no email or password")
@@ -206,7 +209,7 @@ class Accounts:
         else:
             account = Account.from_session_info(
                 session_info.user.email, password, session_token, session_info,
-                self.__cache_path, self.proxy,
+                self.__cache_path, level, self.proxy,
             )
             self.accounts[session_info.user.email] = account
         self.save(config_file)

@@ -118,6 +118,28 @@ cmd_enable() {
   jq -r . <<< "$json_str"
 }
 
+cmd_valid() {
+  local level="${1:-1}"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/account/valid?account=${ACCOUNT_ID}&level="${level})" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
+cmd_level() {
+  local level="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X PATCH "$BASE_URL/api/account?account=${ACCOUNT_ID}&level=${level}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
 cmd_models() {
   local json_str exit_code=0
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/models?account=${ACCOUNT_ID}")" || exit_code="$?"

@@ -43,6 +43,7 @@ def get_account_info(account: Account) -> dict:
         "counter": account.counter.get(),
         "is_busy": account.is_busy,
         "is_disabled": account.is_disabled,
+        "level": account.level,
         "user": None,
         "err": account.err_msg,
     }
@@ -70,6 +71,7 @@ def handle_get_account_list():
             "counter": account.counter.get(),
             "is_busy": account.is_busy,
             "is_disabled": account.is_disabled,
+            "level": account.level,
             "err": account.err_msg,
         })
     return flask.jsonify(result)
@@ -77,12 +79,15 @@ def handle_get_account_list():
 
 @app.route('/api/account/valid')
 def handle_get_account_valid():
+    level = int(flask.request.args.get('level', 1, type=int))
     result = []
     for account_id in globalObject.accounts.accounts:
         account = globalObject.accounts.accounts[account_id]
         if not account.is_logged_in:
             continue
         if account.is_disabled:
+            continue
+        if account.level > level:
             continue
         result.append({
             "id": account.id,
@@ -91,6 +96,7 @@ def handle_get_account_valid():
             "counter": account.counter.get(),
             "is_busy": account.is_busy,
             "is_disabled": account.is_disabled,
+            "level": account.level,
             "err": account.err_msg,
         })
     return flask.jsonify(result)
@@ -105,7 +111,7 @@ def handle_get_account_dump():
     return flask.jsonify(result)
 
 
-@app.route('/api/account', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/api/account', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def handle_get_account_info():
     if flask.request.method == 'GET':
         account_id = flask.request.args.get('account')
@@ -114,15 +120,13 @@ def handle_get_account_info():
             return r
         return flask.jsonify(get_account_info(account))
     elif flask.request.method == 'PUT':
-        email = flask.request.args.get('email')
-        if email is None:
-            email = ""
-        password = flask.request.args.get('password')
-        if password is None:
-            password = ""
+        email = flask.request.args.get('email', "")
+        password = flask.request.args.get('password', "")
+        # 从 url 参数中获取 int 类型的 level，如果没有则返回 1
+        level = int(flask.request.args.get('level', 65536, type=int))
         session_token = flask.request.get_data().decode()
         try:
-            account = globalObject.accounts.apply(email, password, session_token, globalObject.config_path)
+            account = globalObject.accounts.apply(email, password, level, session_token, globalObject.config_path)
         except requests.RequestException as err:
             return flask.make_response(str(err), http.HTTPStatus.UNAUTHORIZED)
         except OpenAIAuth.Error as err:
@@ -135,6 +139,16 @@ def handle_get_account_info():
             return r
         del globalObject.accounts.accounts[account.id]
         return flask.jsonify({})
+    elif flask.request.method == 'PATCH':
+        # 修改帐号的 level
+        account_id = flask.request.args.get('account')
+        account, r = get_account_query(account_id)
+        if account is None:
+            return r
+        level = int(flask.request.args.get('level', type=int))
+        account.level = level
+        globalObject.accounts.save(globalObject.config_path)
+        return flask.jsonify(get_account_info(account))
 
 
 @app.route('/api/account/login', methods=['PATCH', 'POST'])
