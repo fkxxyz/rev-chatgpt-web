@@ -245,12 +245,13 @@ class Authenticator:
             new_state = new_state.split('"')[0]
             self.__part_six(old_state=state, new_state=new_state)
         else:
-            if response.text.find('Wrong email or password') != -1:
+            match = re.search(r'<p\s+class="[^"]*\bcdf172c78\b[^"]*">(.*?)</p>', response.text)
+            if match:
+                details = match.group(1)
+            elif response.text.find('Wrong email or password') != -1:
                 details = 'Wrong email or password'
-            elif response.text.find('detected suspicious login behavior') != -1:
-                details = 'detected suspicious login behavior'
             else:
-                details = 'unknown credential error'
+                details = response.text
             raise Error(
                 location="__part_five",
                 status_code=response.status_code,
