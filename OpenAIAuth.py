@@ -245,17 +245,24 @@ class Authenticator:
             new_state = new_state.split('"')[0]
             self.__part_six(old_state=state, new_state=new_state)
         else:
-            match = re.search(r'<p\s+class="[^"]*\bcdf172c78\b[^"]*">(.*?)</p>', response.text)
-            if match:
-                details = match.group(1)
-            elif response.text.find('Wrong email or password') != -1:
-                details = 'Wrong email or password'
-            else:
-                details = response.text
+            def get_details(response: requests.Response) -> str:
+                if response.text.find('Wrong email or password') != -1:
+                    return 'Wrong email or password'
+
+                match = re.search(r'<p\s+class="[^"]*\bcdf172c78\b[^"]*">(.*?)</p>', response.text)
+                if match:
+                    return match.group(1)
+
+                match = re.search(r'<h1\s+class="[^"]*\bmui-style-lg1k70\b[^"]*">(.*?)</h1>', response.text)
+                if match:
+                    return match.group(1)
+
+                return response.text
+
             raise Error(
                 location="__part_five",
                 status_code=response.status_code,
-                details=details,
+                details=get_details(response),
             )
 
     def __part_six(self, old_state: str, new_state) -> None:
