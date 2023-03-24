@@ -22,8 +22,8 @@ cmd_accounts() {
     echo "$json_str"
     return "$exit_code"
   fi
-  local id email valid disabled counter disabled_color valid_color
-  while read -r id email valid disabled counter; do
+  local id email valid disabled level counter disabled_color valid_color
+  while read -r id email valid disabled level counter; do
     if [ "$disabled" == "true" ]; then
       disabled_color=90
     else
@@ -34,12 +34,12 @@ cmd_accounts() {
     else
       valid_color=31
     fi
-    printf '\e[1;%sm%s\e[0m \e[1;%sm%s\e[0m \e[1;%sm%s\e[0m\n' \
+    printf '\e[1;%sm%s\e[0m \e[1;%sm%s\e[0m \e[1;%sm%s %s\e[0m\n' \
       "$disabled_color" "$id" \
       "$valid_color" "$email" \
-      "$disabled_color" "$counter" \
+      "$disabled_color" "$level" "$counter" \
       "$@"
-  done < <(jq -r '.[] | "\(.id) \(.email) \(.is_logged_in) \(.is_disabled) \(.counter)"' <<< "$json_str")
+  done < <(jq -r '.[] | "\(.id) \(.email) \(.is_logged_in) \(.is_disabled) \(.level) \(.counter)"' <<< "$json_str")
 }
 
 cmd_login() {
