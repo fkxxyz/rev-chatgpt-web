@@ -302,6 +302,15 @@ class Authenticator:
             self.session_token = response.cookies.get(
                 "__Secure-next-auth.session-token",
             )
+        elif response.status_code == 307:
+            # 解析 response.text 中的 error 参数并 url 解码
+            error = re.findall(r"error=(.*)", response.text)[0]
+            error = urllib.parse.unquote(error)
+            raise Error(
+                location="__part_seven",
+                status_code=http.HTTPStatus.FORBIDDEN,
+                details=error,
+            )
         else:
             raise Error(
                 location="__part_seven",
