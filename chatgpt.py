@@ -108,7 +108,7 @@ def get_response_body_detail(response_body: bytes | dict) -> (str, int):
         message = detail.get("message")
         if code == 'token_expired':
             return message, http.HTTPStatus.UNAUTHORIZED
-    detail_check = detail.lower()
+    detail_check = str(detail).lower()
     if detail_check.find('too many requests') >= 0:
         return detail, http.HTTPStatus.TOO_MANY_REQUESTS
     if detail_check.find('not found') >= 0:
@@ -119,6 +119,8 @@ def get_response_body_detail(response_body: bytes | dict) -> (str, int):
         return detail, http.HTTPStatus.NOT_ACCEPTABLE
     if detail_check.find('only one message at a time') >= 0:
         return detail, http.HTTPStatus.CONFLICT
+    if detail_check.find('Access token is missing') >= 0:
+        assert False  # access token is missing
 
 
 def get_conversations(session: requests.Session, offset=0, limit=20) -> requests.Response:

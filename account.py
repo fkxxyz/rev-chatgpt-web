@@ -67,6 +67,7 @@ class Account:
         with open(session_json_file, 'rb') as f:
             session_json = json.loads(f.read())
         self.session_info = chatgpt.SessionInfo(session_json)
+        chatgpt.set_session(self.session, self.session_info.access_token)
         self.is_logged_in = self.session_info.valid
 
     def save_session(self, session_json_file: str):
