@@ -1,3 +1,6 @@
+from multiprocessing import Event
+from typing import Dict
+
 from account import Account, Accounts
 
 
@@ -9,7 +12,8 @@ class GlobalObjectClass:
         self.cache_path: str = ""
 
         # TODO 自动清理 messages
-        self.messages: dict = {}
+        self.messages: Dict[str, Dict] = {}
+        self.stop_message_flag: Dict[str, Event] = {}
 
 
 globalObject = GlobalObjectClass()

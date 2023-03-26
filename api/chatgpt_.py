@@ -173,6 +173,7 @@ def handle_get_history():
 
 
 def get_reply(account: Account, response: requests.Response, response_iter: Iterator, mid: str):
+    stopped_event = globalObject.stop_message_flag.get(mid)
     try:
         for line in response_iter:
             if len(line) == 0:
@@ -185,7 +186,11 @@ def get_reply(account: Account, response: requests.Response, response_iter: Iter
                     continue
                 globalObject.messages[mid] = line_resp
                 globalObject.messages[mid]["finished"] = False
+                globalObject.messages[mid]["stopped"] = False
                 globalObject.messages[mid]["error"] = ""
+                if not stopped_event.is_set():
+                    globalObject.messages[mid]["stopped"] = True
+                    break
             elif line[:7] == b'event: ':
                 event = line[7:]
                 if event == 'ping':
@@ -201,6 +206,8 @@ def get_reply(account: Account, response: requests.Response, response_iter: Iter
         response.close()
         account.is_busy = False
         globalObject.messages[mid]["finished"] = True
+        stopped_event.set()
+        del globalObject.stop_message_flag[mid]
         print("request " + mid, " closed")
 
 
@@ -271,16 +278,24 @@ def handle_send():
     new_mid = line_resp["message"]["id"]
     globalObject.messages[new_mid] = line_resp
     account.is_busy = True
+    stopped_event = threading.Event()
+    stopped_event.set()
+    globalObject.stop_message_flag[new_mid] = stopped_event
     print("request " + new_mid, " opened")
     threading.Thread(target=get_reply, args=(account, response, response_iter, new_mid)).start()
     return flask.jsonify({"mid": line_resp["message"]["id"]})
 
 
-@app.route('/api/get')
+@app.route('/api/get', methods=["GET", "PATCH"])
 def handle_get():
     message_id = flask.request.args.get('mid')
     if message_id is None:
         return flask.make_response('error: missing mid query', http.HTTPStatus.BAD_REQUEST)
     if message_id not in globalObject.messages:
         return flask.make_response('error: no such mid: ' + message_id, http.HTTPStatus.NOT_FOUND)
+    if flask.request.method == "PATCH":
+        stopped_event = globalObject.stop_message_flag.get(message_id)
+        if stopped_event is not None:
+            stopped_event.clear()
+            stopped_event.wait()
     return flask.jsonify(globalObject.messages[message_id])

@@ -265,13 +265,18 @@ cmd_sendi() {
     return "$exit_code"
   fi
   watch -et -n 0.1 "$0" geti "$result_mid" <<< '' || true
-  cmd_get "$result_mid"
+  cmd_stop "$result_mid"
 }
 
 cmd_get() {
   local mid="$1"
+  local stop="$2"
+  local method="GET"
+  if [ "$stop" ]; then
+    method="PATCH"
+  fi
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/get?mid=${mid}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X "$method" "$BASE_URL/api/get?mid=${mid}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -288,6 +293,11 @@ cmd_get() {
   fi
   printf '%s\n\n' "$id"
   printf '【%s】 %s\n%s%s\n\n' "${roleMap[$role]}" "${mid}" "${msg}" "${finished_flag}"
+}
+
+cmd_stop() {
+  local mid="$1"
+  cmd_get "$mid" 1
 }
 
 cmd_getl() {
@@ -355,6 +365,7 @@ Commands:
   send <msg> <id> <mid>
   sendi <id> <mid>  (from stdin)
   get <mid>
+  stop <mid>
   busy
 
   help
