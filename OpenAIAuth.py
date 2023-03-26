@@ -54,6 +54,24 @@ class Authenticator:
         """
         return urllib.parse.quote(string)
 
+    @staticmethod
+    def get_details(response: requests.Response) -> str:
+        if response.text.find('Wrong email or password') != -1:
+            return 'Wrong email or password'
+
+        match = re.search(r'<p\s+class="[^"]*\bcdf172c78\b[^"]*">(.*?)</p>', response.text)
+        if match:
+            return match.group(1)
+
+        match = re.search(r'<h1\s+class="[^"]*\bmui-style-lg1k70\b[^"]*">(.*?)</h1>', response.text)
+        if match:
+            return match.group(1)
+
+        if response.text.find('Email is not valid.') != -1:
+            return 'Email is not valid.'
+
+        return response.text
+
     def login(self) -> None:
         """
         In part two, We make a request to https://explorer.api.openai.com/api/auth/csrf and grab a fresh csrf token
@@ -79,7 +97,7 @@ class Authenticator:
             raise Error(
                 location="begin",
                 status_code=response.status_code,
-                details=response.text,
+                details=Authenticator.get_details(response),
             )
 
     def __part_one(self, token: str) -> None:
@@ -113,14 +131,14 @@ class Authenticator:
                 raise Error(
                     location="__part_one",
                     status_code=response.status_code,
-                    details="You have been rate limited. Please try again later.",
+                    details=Authenticator.get_details(response),
                 )
             self.__part_two(url=url)
         else:
             raise Error(
                 location="__part_one",
                 status_code=response.status_code,
-                details=response.text,
+                details=Authenticator.get_details(response),
             )
 
     def __part_two(self, url: str) -> None:
@@ -149,7 +167,7 @@ class Authenticator:
             raise Error(
                 location="__part_two",
                 status_code=response.status_code,
-                details=response.text,
+                details=Authenticator.get_details(response),
             )
 
     def __part_three(self, state: str) -> None:
@@ -173,7 +191,7 @@ class Authenticator:
             raise Error(
                 location="__part_three",
                 status_code=response.status_code,
-                details=response.text,
+                details=Authenticator.get_details(response),
             )
 
     def __part_four(self, state: str) -> None:
@@ -211,7 +229,7 @@ class Authenticator:
             raise Error(
                 location="__part_four",
                 status_code=response.status_code,
-                details="Your email address is invalid.",
+                details=Authenticator.get_details(response),
             )
 
     def __part_five(self, state: str) -> None:
@@ -245,24 +263,10 @@ class Authenticator:
             new_state = new_state.split('"')[0]
             self.__part_six(old_state=state, new_state=new_state)
         else:
-            def get_details(response: requests.Response) -> str:
-                if response.text.find('Wrong email or password') != -1:
-                    return 'Wrong email or password'
-
-                match = re.search(r'<p\s+class="[^"]*\bcdf172c78\b[^"]*">(.*?)</p>', response.text)
-                if match:
-                    return match.group(1)
-
-                match = re.search(r'<h1\s+class="[^"]*\bmui-style-lg1k70\b[^"]*">(.*?)</h1>', response.text)
-                if match:
-                    return match.group(1)
-
-                return response.text
-
             raise Error(
                 location="__part_five",
                 status_code=response.status_code,
-                details=get_details(response),
+                details=Authenticator.get_details(response),
             )
 
     def __part_six(self, old_state: str, new_state) -> None:
