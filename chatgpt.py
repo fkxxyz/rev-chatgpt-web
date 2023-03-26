@@ -6,7 +6,7 @@ import requests
 
 import OpenAIAuth
 
-BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.duti.tech/"
+BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.churchless.tech/api/"
 LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
 CHATGPT_DEFAULT_MODEL = "text-davinci-002-render-sha"
