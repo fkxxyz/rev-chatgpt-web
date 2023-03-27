@@ -214,3 +214,15 @@ def handle_account_enable():
         account.is_disabled = False
         globalObject.accounts.save(globalObject.config_path)
     return flask.jsonify(get_account_info(account))
+
+
+@app.route('/api/account/lock', methods=['PATCH'])
+def handle_account_lock():
+    account_id = flask.request.args.get('account')
+    account, r = get_account_query(account_id)
+    if account is None:
+        return r
+    n = int(flask.request.args.get('n', 1, type=int))
+
+    account.counter.increase(n)
+    return flask.jsonify(get_account_info(account))

@@ -68,11 +68,11 @@ class RequestCounter:
         self.__sum = s_json["sum"]
         self.__loop_counter = s_json["counter"]
 
-    def increase(self):
+    def increase(self, n: int = 1):
         i = int(time.time()) % self.__loop_length
         self.__locker.acquire()
-        self.__loop_counter[i] += 1
-        self.__sum += 1
+        self.__loop_counter[i] += n
+        self.__sum += n
         self.__dirty = True
         self.__locker.release()
 
