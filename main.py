@@ -38,7 +38,7 @@ def run(host: str, port: int, dist: str, config: str, cache: str):
     for account_id in accounts.accounts:
         globalObject.default_account = accounts.accounts[account_id]
         break
-    serve(app, host=host, port=port)
+    serve(app, host=host, port=port, threads=256)
 
 
 def main() -> int:
