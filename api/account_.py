@@ -43,7 +43,8 @@ def account_login_with_password(account: Account):
 
 
 # 标记帐号 token 已无效
-def account_logout(account: Account):
+def account_logout(account: Account, response: requests.Response):
+    account.err_msg = f"http status({response.status_code}): " + response.content.decode()
     account.is_logged_in = False
     if account.session_info is not None:
         account.session_info.valid = False
