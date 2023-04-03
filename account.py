@@ -220,5 +220,30 @@ class Accounts:
         account.save_session(os.path.join(self.__cache_path, self.__cache_path, account.id + ".json"))
         return account
 
+    def apply2(self, session_json: dict, config_file: str) -> Account:
+        session_info = chatgpt.SessionInfo(session_json)
+        for id_ in self.accounts:
+            if self.accounts[id_].email == session_info.user.email:
+                account = self.accounts[id_]
+                account.session_info = session_info
+                print(f"session_token login({account.email}) ...")
+                chatgpt.set_session(account.session, account.session_info.access_token)
+                account.is_logged_in = account.logged_in()
+                session_info.valid = account.is_logged_in
+                if account.is_logged_in:
+                    print(f"session_token login({account.email}) success")
+                else:
+                    print(f"session_token login({account.email}) failed")
+                break
+        else:
+            account = Account.from_session_info(
+                session_info.user.email, '', '', session_info,
+                self.__cache_path, 65536, self.proxy,
+            )
+            self.accounts[session_info.user.email] = account
+        self.save(config_file)
+        account.save_session(os.path.join(self.__cache_path, self.__cache_path, account.id + ".json"))
+        return account
+
     def set(self, account: Account):
         self.accounts[account.id] = account

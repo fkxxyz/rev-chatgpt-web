@@ -88,6 +88,20 @@ cmd_apply2() {
   jq -r . <<< "$json_str"
 }
 
+cmd_apply3() {
+  local session_info
+  session_info="$(cat)"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+    -X POST -H "Content-Type: application/json" -d "$session_info" \
+    "$BASE_URL/api/account")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r . <<< "$json_str"
+}
+
 cmd_info() {
   local json_str exit_code=0
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/account?account=${ACCOUNT_ID}")" || exit_code="$?"
@@ -352,6 +366,7 @@ Commands:
   login2
   apply <<< session_token
   apply2 <email> <password>
+  apply3 <<< session_info
   disable
   enable
 

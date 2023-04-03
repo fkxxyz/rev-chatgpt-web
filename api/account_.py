@@ -129,7 +129,7 @@ def handle_get_account_dump():
     return flask.jsonify(result)
 
 
-@app.route('/api/account', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
+@app.route('/api/account', methods=['GET', 'PUT', 'POST', 'DELETE', 'PATCH'])
 def handle_get_account_info():
     if flask.request.method == 'GET':
         account_id = flask.request.args.get('account')
@@ -145,6 +145,16 @@ def handle_get_account_info():
         session_token = flask.request.get_data().decode()
         try:
             account = globalObject.accounts.apply(email, password, level, session_token, globalObject.config_path)
+        except requests.RequestException as err:
+            return flask.make_response(str(err), http.HTTPStatus.UNAUTHORIZED)
+        except OpenAIAuth.Error as err:
+            return flask.make_response(err.details, err.status_code)
+        return flask.jsonify(get_account_info(account))
+    elif flask.request.method == 'POST':
+        # 从 body 中获取 json 数据
+        session_json = flask.request.get_json()
+        try:
+            account = globalObject.accounts.apply2(session_json, globalObject.config_path)
         except requests.RequestException as err:
             return flask.make_response(str(err), http.HTTPStatus.UNAUTHORIZED)
         except OpenAIAuth.Error as err:
