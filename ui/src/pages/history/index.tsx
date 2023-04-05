@@ -18,10 +18,14 @@ const Item: Component<{
       if (!parent) break
       const parentNode = c.mapping[parent]
       if (parentNode) {
-        parentNode.message && msgSort.push(parentNode)
+        console.log("message", !!parentNode.message)
+        if (parentNode.message && parentNode.message.author.role != "system") {
+          msgSort.push(parentNode)
+        }
         parent = parentNode.parent
       }
     }
+    console.log(msgSort)
     return msgSort.reverse()
   }
   async function hdlQueryChat() {
@@ -43,12 +47,12 @@ const HistoryMgr: Component = () => {
     nav("/login", { replace: true })
   }
   return (
-    <div class="h-2/10 shrink-0 w-full overflow-scroll" flex="~ col" border="gray-600 t-1px" text="6">
-      <div class="hover:(bg-gray-900) p-8 border-b-1px border-gray-700" cursor-pointer>
+    <div class="h-2/10 shrink-0 w-full overflow-scroll" flex="~ col" border="gray-600 t-1px" text="5" scrollbar="~ h-0 w-0">
+      <div class="hover:(bg-gray-900) px-8 py-4 border-b-1px border-gray-700" cursor-pointer>
         删除所有聊天
       </div>
       <Show when={accountStore.currentAccount}>
-        <div onClick={hdlLogout} class="hover:(bg-gray-900) p-8 border-b-1px border-gray-700" cursor-pointer>
+        <div onClick={hdlLogout} class="hover:(bg-gray-900) px-8 py-4 border-b-1px border-gray-700" cursor-pointer>
           退出登录
         </div>
       </Show>
@@ -56,7 +60,7 @@ const HistoryMgr: Component = () => {
         onClick={() => {
           nav("/login", { replace: true })
         }}
-        class="hover:(bg-gray-900) p-8 border-b-1px border-gray-700"
+        class="hover:(bg-gray-900) px-8 py-4 border-b-1px border-gray-700"
         cursor-pointer>
         添加账户
       </div>
@@ -67,7 +71,7 @@ const HistoryMgr: Component = () => {
 const History: Component = () => {
   return (
     <div flex="~ col" class="h-full w-1/8 bg-gray-800 space-y-2 select-none">
-      <div class="h-8/10 overflow-scroll p-4">
+      <div class="h-8/10 overflow-scroll p-4" scrollbar="~ h-0 w-0">
         <For each={accountStore.currentAccount?.history?.items}>{it => <Item historyItem={it} />}</For>
       </div>
       <HistoryMgr />

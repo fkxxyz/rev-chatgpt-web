@@ -14,6 +14,7 @@ specifiers:
   solid-js: ^1.6.10
   typescript: ^4.9.5
   unocss: ^0.50.6
+  unocss-preset-scrollbar: ^0.2.1
   vite: ^4.1.1
   vite-plugin-solid: ^2.5.0
 
@@ -33,6 +34,7 @@ devDependencies:
   solid-devtools: 0.26.0_mquokdrcqcxvtp7b5du7eh3smu
   typescript: 4.9.5
   unocss: 0.50.6_vite@4.1.1
+  unocss-preset-scrollbar: 0.2.1_unocss@0.50.6
   vite: 4.1.1
   vite-plugin-solid: 2.5.0_solid-js@1.6.10+vite@4.1.1
 
@@ -2404,6 +2406,10 @@ packages:
       unconfig: 0.3.7
     dev: true
 
+  /@unocss/core/0.31.17:
+    resolution: {integrity: sha512-DJ3Uk2ePVXvV1qQmgoLK44aqB6f0s+naOEvouI97nzVXDZgxDQPBxIPB/L4vvE4U+gQxEiHwwE3gJ75iPqVzXw==}
+    dev: true
+
   /@unocss/core/0.50.6:
     resolution: {integrity: sha512-WMIp8xr7YSlID2whqfRGLwagp59e6u4ckPACEpoDOW8sTeSPRZm54hxPhuWXD1SQuqcwHPMtM9nzGD8UOnqQxA==}
     dev: true
@@ -2441,6 +2447,12 @@ packages:
       ofetch: 1.0.1
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /@unocss/preset-mini/0.31.17:
+    resolution: {integrity: sha512-gVgMTOKLt3O1ym348QIBmR5sS9W0Ozkk5xelhH6e0VXcpg0dXDPDrl4hFErMy4x6IB86yyJG6Dz5JhcwQB13Ig==}
+    dependencies:
+      '@unocss/core': 0.31.17
     dev: true
 
   /@unocss/preset-mini/0.50.6:
@@ -4111,6 +4123,15 @@ packages:
     engines: {node: '>= 10.0.0'}
     dev: true
     optional: true
+
+  /unocss-preset-scrollbar/0.2.1_unocss@0.50.6:
+    resolution: {integrity: sha512-7ubHdOaUwr7xBn1glPpICNNsM2SZGjvWK5uRPNiQYsrZ9YFjsCGHk9x5S2R8pTkuMDQeiaSa/UQbYhjC8Fra5g==}
+    peerDependencies:
+      unocss: '>= 0.31.13 < 1'
+    dependencies:
+      '@unocss/preset-mini': 0.31.17
+      unocss: 0.50.6_vite@4.1.1
+    dev: true
 
   /unocss/0.50.6_vite@4.1.1:
     resolution: {integrity: sha512-7cKiIB/ssAPvCDUcFMs0jm0FzIyQKfgIjUzBYZ5dVFthOvN5dcFh7bCZE9dIM862n7oW8FjbkTxwdTbRqqJQVQ==}
