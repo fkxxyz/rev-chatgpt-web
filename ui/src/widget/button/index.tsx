@@ -11,7 +11,7 @@ const Button: Component<{
   title: string
   click?: () => void
 }> = p => {
-  const commonClass = "flex-1 bg-white border-1px p-2 rounded-2 cursor-pointer select-none text-center"
+  const commonClass = "flex-1 border-1px p-2 rounded-2 cursor-pointer select-none text-center"
   const presetClass = createMemo(() => {
     let classes = " "
     switch (p.preset) {

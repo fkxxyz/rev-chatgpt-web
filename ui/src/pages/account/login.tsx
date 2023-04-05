@@ -1,25 +1,33 @@
+import { useNavigate } from "@solidjs/router"
 import type { Component } from "solid-js"
 import { createSignal, Show } from "solid-js"
 import { loginBySesison } from "~/api"
-import { updateAccounts, updateCurrentAccount } from "~/store/account"
+import { updateAccounts, updateCurrentAccount, setAccountStore, accountStore } from "~/store/account"
+import { AccountStore } from "~/types"
 import Button from "~/widget/button"
 
 const [token, setToken] = createSignal("")
-
 const [msg, setMsg] = createSignal("")
 
-async function hdlLogin() {
-  setMsg("登录中...")
-  if (await loginBySesison(token())) {
-    setMsg("登录成功")
-    await updateAccounts()
-    await updateCurrentAccount()
-  } else {
-    setMsg("登录失败")
-  }
-}
-
 const Form: Component = () => {
+  const nav = useNavigate()
+  async function hdlLogin() {
+    setMsg("登录中...")
+    const ac = await loginBySesison(token())
+    if (ac && ac.err == "") {
+      setMsg("登录成功")
+      await updateAccounts()
+      setAccountStore({ currentAccount: ac } as AccountStore)
+      await updateCurrentAccount()
+      nav("/", { replace: true })
+    } else {
+      if (ac.err.includes("401")) {
+        setMsg("登录失败，此账号可能已被封禁")
+      } else {
+        setMsg("登录失败")
+      }
+    }
+  }
   return (
     <div flex="~ col" class="rounded-20px bg-white space-y-16px" w-120 h-fit p-10 text="#333">
       <div flex="~ col" grow>
@@ -49,7 +57,7 @@ const Form: Component = () => {
 }
 const Login: Component = () => {
   return (
-    <div flex="~" class="xyc w-full h-full bg-#715fde">
+    <div flex="~" class="xyc w-screen h-screen bg-#715fde">
       <Form />
     </div>
   )
