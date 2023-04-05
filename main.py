@@ -21,7 +21,7 @@ def load_config(config: dict, cache_path: str) -> Accounts:
 def run(host: str, port: int, dist: str, config: str, cache: str):
     from waitress import serve
 
-    app._static_folder = dist
+    app._static_folder = os.path.abspath(dist)
     with open(config, 'rb') as f:
         config_obj = json.load(f)
     accounts = load_config(config_obj, cache)
