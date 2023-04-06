@@ -184,6 +184,9 @@ def get_reply(account: Account, response: requests.Response, response_iter: Iter
                 except json.decoder.JSONDecodeError:
                     print(line)
                     continue
+                if "message" not in line_resp or line_resp["message"] is None:
+                    print(line)
+                    continue
                 globalObject.messages[mid] = line_resp
                 globalObject.messages[mid]["finished"] = False
                 globalObject.messages[mid]["stopped"] = False
