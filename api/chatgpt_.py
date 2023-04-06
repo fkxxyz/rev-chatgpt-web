@@ -15,7 +15,6 @@ from api.common import globalObject
 
 logged_out_code_set = {
     http.HTTPStatus.UNAUTHORIZED,
-    http.HTTPStatus.FORBIDDEN,
 }
 
 
