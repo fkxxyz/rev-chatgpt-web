@@ -24,7 +24,10 @@ def handle_get_models():
     account, r = get_account_query(account_id, False)
     if r is not None:
         return r
-    response = chatgpt.get_models(account.session)
+    try:
+        response = chatgpt.get_models(account.session)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -58,7 +61,10 @@ def handle_get_conversations():
         limit = int(limit)
     except ValueError:
         return flask.make_response('error: invalid offset or limit query', http.HTTPStatus.BAD_REQUEST)
-    response = chatgpt.get_conversations(account.session, offset, limit)
+    try:
+        response = chatgpt.get_conversations(account.session, offset, limit)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -81,7 +87,10 @@ def handle_delete_conversation():
     conversation_id = flask.request.args.get('id')
     if conversation_id is None or len(conversation_id) != 36:
         return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
-    response = chatgpt.delete_conversation(account.session, conversation_id)
+    try:
+        response = chatgpt.delete_conversation(account.session, conversation_id)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -108,7 +117,10 @@ def handle_change_title():
     title_str = title_bytes.decode()
     if len(title_str) == 0:
         return flask.make_response('error: missing title body', http.HTTPStatus.BAD_REQUEST)
-    response = chatgpt.change_title(account.session, conversation_id, title_str)
+    try:
+        response = chatgpt.change_title(account.session, conversation_id, title_str)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -134,7 +146,10 @@ def handle_gen_title():
     message_id = flask.request.args.get('mid')
     if message_id is None or len(message_id) == 0:
         return flask.make_response('error: missing m`id query', http.HTTPStatus.BAD_REQUEST)
-    response = chatgpt.generate_title(account.session, conversation_id, message_id)
+    try:
+        response = chatgpt.generate_title(account.session, conversation_id, message_id)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -157,7 +172,10 @@ def handle_get_history():
     conversation_id = flask.request.args.get('id')
     if conversation_id is None or len(conversation_id) != 36:
         return flask.make_response('error: missing or invalid id query', http.HTTPStatus.BAD_REQUEST)
-    response = chatgpt.get_conversation_history(account.session, conversation_id)
+    try:
+        response = chatgpt.get_conversation_history(account.session, conversation_id)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
@@ -236,8 +254,8 @@ def handle_send():
     try:
         account.counter.increase()
         response = chatgpt.send(account.session, conversation_id, parent_id, msg_str)
-    except requests.exceptions.ReadTimeout as err:
-        return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
+    except requests.RequestException as err:
+        return flask.make_response(str(err), http.HTTPStatus.BAD_GATEWAY)
     if response.status_code != http.HTTPStatus.OK:
         if response.status_code in logged_out_code_set:
             account_logout(account, response)
