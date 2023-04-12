@@ -160,7 +160,7 @@ def handle_get_account_info():
         email = flask.request.args.get("email", "")
         password = flask.request.args.get("password", "")
         # 从 url 参数中获取 int 类型的 level，如果没有则返回 1
-        level = int(flask.request.args.get("level", 65536, tjype=int))
+        level = int(flask.request.args.get("level", 65536, type=int))
         session_token = flask.request.get_data().decode()
         try:
             account = globalObject.accounts.apply(
