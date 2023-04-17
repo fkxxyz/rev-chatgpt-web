@@ -6,7 +6,7 @@ import requests
 
 import OpenAIAuth
 
-BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.churchless.tech/"
+BASE_URL = os.environ.get("CHATGPT_BASE_URL") or "https://bypass.churchless.tech/api/"
 LOGIN_URL = "https://explorer.api.openai.com/api/auth/session"
 
 CHATGPT_DEFAULT_MODEL = "text-davinci-002-render-sha"
@@ -124,27 +124,27 @@ def get_response_body_detail(response_body: bytes | dict) -> (str, int):
 
 
 def get_conversations(session: requests.Session, offset=0, limit=20) -> requests.Response:
-    url = BASE_URL + f"api/conversations?offset={offset}&limit={limit}"
+    url = BASE_URL + f"conversations?offset={offset}&limit={limit}"
     return session.get(url)
 
 
 def delete_conversation(session: requests.Session, conversation_id: str) -> requests.Response:
-    url = BASE_URL + f"api/conversation/{conversation_id}"
+    url = BASE_URL + f"conversation/{conversation_id}"
     return session.patch(url, data='{"is_visible": false}')
 
 
 def clear_conversations(session: requests.Session) -> requests.Response:
-    url = BASE_URL + "api/conversations"
+    url = BASE_URL + "conversations"
     return session.patch(url, data='{"is_visible": false}')
 
 
 def get_conversation_history(session: requests.Session, conversation_id: str) -> requests.Response:
-    url = BASE_URL + f"api/conversation/{conversation_id}"
+    url = BASE_URL + f"conversation/{conversation_id}"
     return session.get(url)
 
 
 def generate_title(session: requests.Session, conversation_id: str, message_id: str) -> requests.Response:
-    url = BASE_URL + f"api/conversation/gen_title/{conversation_id}"
+    url = BASE_URL + f"conversation/gen_title/{conversation_id}"
     data = {
         "message_id": message_id,
         "model": "text-davinci-002-render",
@@ -153,12 +153,12 @@ def generate_title(session: requests.Session, conversation_id: str, message_id: 
 
 
 def change_title(session: requests.Session, conversation_id: str, title: str) -> requests.Response:
-    url = BASE_URL + f"api/conversation/{conversation_id}"
+    url = BASE_URL + f"conversation/{conversation_id}"
     return session.patch(url, data=f'{{"title": "{title}"}}'.encode())
 
 
 def get_models(session: requests.Session, timeout: int | None = None):
-    url = BASE_URL + f"api/models"
+    url = BASE_URL + f"models"
     return session.get(url, timeout=timeout)
 
 
@@ -185,7 +185,7 @@ def send(session: requests.Session, conversation_id: str, parent_id: str,
     if conversation_id is not None and len(conversation_id) != 0:
         data["conversation_id"] = conversation_id
     return session.post(
-        url=BASE_URL + "api/conversation",
+        url=BASE_URL + "conversation",
         data=json.dumps(data),
         timeout=600,
         stream=True,
