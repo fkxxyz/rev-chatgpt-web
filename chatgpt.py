@@ -99,6 +99,8 @@ def get_response_body_detail(response_body: bytes | dict) -> (str, int):
     else:
         assert type(response_body) == dict
         response_json = response_body
+    if response_json is None:
+        return None
     detail = response_json.get("detail")
     if detail is None:
         return None

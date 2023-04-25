@@ -290,6 +290,8 @@ def handle_send():
             return flask.make_response("assistant role not found", http.HTTPStatus.INTERNAL_SERVER_ERROR)
     except requests.RequestException as err:
         return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
+    except StopIteration as err:
+        return flask.make_response(str(err), http.HTTPStatus.INTERNAL_SERVER_ERROR)
     role = line_resp["message"]["author"]["role"]
     if role != "assistant":
         return flask.make_response("assistant role not found", http.HTTPStatus.INTERNAL_SERVER_ERROR)
